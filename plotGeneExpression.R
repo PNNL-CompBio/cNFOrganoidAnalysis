@@ -27,8 +27,17 @@ rownames(annotes)<-c()
 annotes<-annotes%>%tibble::column_to_rownames('specimenID')
 
 
-##update annotes
-for(x in c('kines','Mammo','DMEM','Forskoline','StemPro')){
+##update annote
+annotes$Media<-rep("None",nrow(annotes))
+annotes$Media[grep("DMEM",annotes$experimentalCondition)]<-'DMEM'
+annotes$Media[grep("StemPro",annotes$experimentalCondition)]<-'StemPro'
+annotes$Media[grep('Mammo',annotes$experimentalCondition)]<-'Mammo'
+
+pats=annotes$individualID[grep('patient',annotes$individualID)]
+specs<-c(rownames(annotes)[grep('patient',rownames(annotes))],
+         'NF0002-8-19 M','NF0009-1- M+C+F','NF0012-3-6 M')
+
+for(x in c('kines','Forskoline')){
   annotes[[x]]<-FALSE
   annotes[[x]][grep(x,annotes$experimentalCondition)]<-TRUE
  # annotes[[x]]=as.character(annotes)
@@ -37,7 +46,8 @@ annotes<-annotes%>%dplyr::rename(Cytokines='kines')#%>%dplyr::select(-experiment
 nannotes<-apply(annotes,2,as.character)
 rownames(nannotes)<-rownames(annotes)
 
-mat<-rnaseq%>%dplyr::select(specimenID,zScore,Symbol)%>%distinct()%>%
+mat<-rnaseq%>%
+  dplyr::select(specimenID,zScore,Symbol)%>%
   tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
                      values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
   tibble::column_to_rownames('Symbol')%>%as.matrix()
@@ -166,15 +176,14 @@ plotDifferencesInCondition<-function(cond='None'){
 }
 
 library(ggfortify)
-p1<-autoplot(prcomp(t(mat)),data=annotes,colour='experimentalCondition',shape='individualID')
-pats=annotes$individualID[grep('patient',annotes$individualID)]
+p1<-autoplot(prcomp(t(mat)),data=nannotes[colnames(mat),],shape='Media',colour='individualID')
 
 
 ggsave('pcaOfAllSamples.png',p1)
-sapply(c('Cytokines','DMEM','Forskoline','Mammo','StemPro'),plotDifferencesInCondition)
+#sapply(c('DMEM','Mammo','StemPro'),plotDifferencesInCondition)
 
 sannotes<-nannotes%>%as.data.frame(stringsAsFactors=FALSE)%>%
-  dplyr::select(DMEM,Mammo,Forskoline,Cytokines,StemPro,individualID)%>%
+  dplyr::select(Media,Cytokines,Forskoline,individualID)%>%
   dplyr::mutate(cohort=ifelse(individualID%in%pats,'cNF','Organoid'))
 rownames(sannotes)<-rownames(nannotes)
 
@@ -187,21 +196,67 @@ pheatmap(cor(mat,method='spearman'),
          filename=paste0('heatmapOfAllConditions.pdf'))
 
 
-for(pat in unique(annotes$individualID)){
-  tannotes<-subset(sannotes, individualID%in%c(pat,pats))%>%
-    dplyr::select(-individualID)
-  #tannotes2<-tannotes%>%
-  #  mutate(dataset=ifelse(individualID%in%pats,'cNF','Organoid'))%>%
-  #  dplyr::select(-individualID)
-  #rownames(tannotes2)<-rownames(tannotes)
-      #dplyr::select(-c(individualID))
-  pmat<-mat[,rownames(tannotes)]
-  pmat
-  pheatmap(cor(pmat,method='spearman'),
-          annotation_col = tannotes,
-          annotation_row=tannotes,
-          cellheight=10,cellwidth = 10,
-           filename=paste0('heatmapOf',pat,'Conditions.pdf'))
-}
+orgs<-setdiff(annotes$individualID,pats)
+
+dlist<-lapply(orgs,function(pat){
+  ##tannotes<-subset(annotes, individualID%in%c(pat,pats))%>%
+    #dplyr::select(-individualID)
+  
+  iannote<-subset(annotes,individualID==pat)%>%
+    dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
+
+  norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
+  
+  norcors<-sapply(setdiff(rownames(iannote),norm),function(x) cor(mat[,norm],mat[,x],method='spearman'))
+ 
+  pdat<-iannote%>%subset(experimentalCondition!="None")%>%
+    dplyr::select(Media,Cytokines,Forskolin)%>%
+    cbind(Similarity=norcors)
+  
+  return(pdat)
+})
+
+names(dlist)<-orgs
+ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+  tibble::rownames_to_column('Sample')
+
+write.csv(ddf,'orgCorrelations.csv',row.names=F)
+
+names(dlist)<-orgs
+plist<-lapply(orgs,function(pat){
+  pdat<-dlist[[pat]]
+  pdat%>%ggplot(aes(y=Similarity,x=Media,shape=Forskolin,color=Cytokines))+
+    geom_point(aes(size=10))+
+    ggtitle(pat)
+})
+
+library(cowplot)
+res=cowplot::plot_grid(plotlist=plist)
+ggsave(filename='corPlots.pdf',res)
+
+
+mat<-rnaseq%>%
+  subset(specimenID%in%specs)%>%
+  dplyr::select(specimenID,zScore,Symbol)%>%
+  tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
+                     values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
+  tibble::column_to_rownames('Symbol')%>%as.matrix()
+
+
+##now let's plot correlation with CNFs
+
+nfsamps<-colnames(mat)[grep('NF',colnames(mat))]
+others<-setdiff(colnames(mat),nfsamps)
+restab=do.call(rbind,lapply(nfsamps,function(x) cor(mat[,x],mat[,others],method='spearman')))
+rownames(restab)<-nfsamps
+
+cnfs<-annotes%>%dplyr::select(individualID)%>%as.data.frame()%>%
+  tibble::rownames_to_column('cNF Sample')
+
+p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('Organoid')%>%
+  tidyr::pivot_longer(others,names_to='cNF Sample',values_to='Similarity')%>%
+  left_join(cnfs)%>%
+  ggplot(aes(x=individualID,y=Similarity,fill=Organoid))+geom_boxplot()+scale_fill_viridis_d()
+ggsave('cNFPatients.pdf',p2,width=10)
 
 
