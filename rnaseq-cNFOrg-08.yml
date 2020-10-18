@@ -1,0 +1,14 @@
+synapse_config:
+  class: File
+  path: "/home/sgosline/.synapseConfig"
+indexid: syn18134565
+index-type: gencode
+index-dir: gencode_v29
+idquery: SELECT specimenID,readPair,id FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq' and individualID = 'NF0008' order by specimenID
+sample_query: SELECT distinct specimenID,individualID,diagnosis,tumorType,resourceType,experimentalCondition,studyName,consortium,fundingAgency,dataType,assay,study, species,nf1Genotype,nf2Genotype,isCellLine FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq'
+parentid: syn22802777
+group_by: specimenID
+tableparentid:
+        - syn11374354
+tablename:
+        - cNF Organoid Gene Counts
