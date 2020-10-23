@@ -18,11 +18,19 @@ return(sync)
 tabres = sync$tableQuery('SELECT zScore,specimenID,Symbol,individualID,experimentalCondition FROM syn22878645')
 tabres2 = sync$tableQuery('SELECT zScore,specimenID,Symbol,individualID,experimentalCondition FROM syn21222341')
 
-rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())
+rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
+  distinct()%>%
+  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C'),'NF0007-2- M+C'))%>%
+  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C+F'),'NF0007-2- M+C+F'))
 
 annotes<-rnaseq%>%
   dplyr::select(specimenID,individualID,experimentalCondition)%>%
+  separate(specimenID,into=c('altID','extra'),sep=' ',remove=F)%>%
+  mutate(altID=stringr::str_replace(altID,'-$',''))%>%select(-extra)%>%
+#  mutate(altID=stringr::str_replace(altID,'[-2-M+C]+','-2'))%>%
+#  mutate(altID=stringr::str_replace(altID,'[007-2+C]+','007-2'))%>%
   distinct()
+
 rownames(annotes)<-c()
 annotes<-annotes%>%tibble::column_to_rownames('specimenID')
 
@@ -33,7 +41,7 @@ annotes$Media[grep("DMEM",annotes$experimentalCondition)]<-'DMEM'
 annotes$Media[grep("StemPro",annotes$experimentalCondition)]<-'StemPro'
 annotes$Media[grep('Mammo',annotes$experimentalCondition)]<-'Mammo'
 
-pats=annotes$individualID[grep('patient',annotes$individualID)]
+pats=annotes$altID[grep('patient',annotes$individualID)]
 specs<-c(rownames(annotes)[grep('patient',rownames(annotes))],
          'NF0002-8-19 M','NF0009-1- M+C+F','NF0012-3-6 M')
 
@@ -196,13 +204,13 @@ pheatmap(cor(mat,method='spearman'),
          filename=paste0('heatmapOfAllConditions.pdf'))
 
 
-orgs<-setdiff(annotes$individualID,pats)
+orgs<-setdiff(annotes$altID,pats)
 
 dlist<-lapply(orgs,function(pat){
   ##tannotes<-subset(annotes, individualID%in%c(pat,pats))%>%
     #dplyr::select(-individualID)
   
-  iannote<-subset(annotes,individualID==pat)%>%
+  iannote<-subset(annotes,altID==pat)%>%
     dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
 
   norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
@@ -218,7 +226,7 @@ dlist<-lapply(orgs,function(pat){
 
 names(dlist)<-orgs
 ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
-  tibble::rownames_to_column('Sample')
+  tibble::rownames_to_column('altID')
 
 write.csv(ddf,'orgCorrelations.csv',row.names=F)
 
@@ -232,10 +240,10 @@ plist<-lapply(orgs,function(pat){
 
 library(cowplot)
 res=cowplot::plot_grid(plotlist=plist)
-ggsave(filename='corPlots.pdf',res)
+ggsave(filename='corPlots.pdf',res,width=10)
 
 
-mat<-rnaseq%>%
+mat2<-rnaseq%>%
   subset(specimenID%in%specs)%>%
   dplyr::select(specimenID,zScore,Symbol)%>%
   tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
@@ -245,12 +253,14 @@ mat<-rnaseq%>%
 
 ##now let's plot correlation with CNFs
 
-nfsamps<-colnames(mat)[grep('NF',colnames(mat))]
-others<-setdiff(colnames(mat),nfsamps)
-restab=do.call(rbind,lapply(nfsamps,function(x) cor(mat[,x],mat[,others],method='spearman')))
+nfsamps<-colnames(mat2)[grep('NF',colnames(mat2))]
+others<-setdiff(colnames(mat2),nfsamps)
+restab=do.call(rbind,lapply(nfsamps,function(x) cor(mat2[,x],mat2[,others],method='spearman')))
 rownames(restab)<-nfsamps
 
-cnfs<-annotes%>%dplyr::select(individualID)%>%as.data.frame()%>%
+cnfs<-annotes%>%
+  dplyr::select(individualID)%>%
+  as.data.frame()%>%
   tibble::rownames_to_column('cNF Sample')
 
 p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('Organoid')%>%
