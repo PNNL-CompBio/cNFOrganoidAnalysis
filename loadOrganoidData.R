@@ -16,8 +16,8 @@ syn=reticulate::import('synapseclient')
 sync=syn$login()
 return(sync)
 ##get annotations
-tabres = sync$tableQuery('SELECT zScore,specimenID,Symbol,individualID,experimentalCondition FROM syn22878645')
-tabres2 = sync$tableQuery('SELECT zScore,specimenID,Symbol,individualID,experimentalCondition FROM syn21222341')
+tabres = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individualID,experimentalCondition FROM syn22878645')
+tabres2 = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individualID,experimentalCondition FROM syn21222341')
 
 rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
   distinct()%>%
@@ -71,7 +71,7 @@ mat<-rnaseq%>%
 
 vars<-apply(mat,1,var,na.rm=T)%>%sort(decreasing=T)
   
-plotDifferencesInCondition<-function(mat,biga,cond='None'){
+plotDifferencesInCondition<-function(mat,biga,cond='None',dataType='geneExpression'){
  print(cond)
   p1<-biga%>%dplyr::rename(val=cond)%>%
     subset(val==TRUE)
@@ -86,7 +86,7 @@ plotDifferencesInCondition<-function(mat,biga,cond='None'){
   if(numGenes>1){
     pheatmap(mat[mres$featureID[1:min(50,numGenes)],biga$specimenID],cellheight=10, cellwidth=10,
              annotation_col = as.data.frame(nannotes,stringsAsFactors = FALSE)%>%dplyr::select(-experimentalCondition),
-             filename=paste0(cond,'top50LVs.pdf'))
+             filename=paste0(cond,'top50',dataType,'.pdf'))
   }
   ##we should probably do some sort of GSEA enrichment poltting as well.
   #print(head(res))
@@ -188,4 +188,49 @@ limmaTwoFactorDEAnalysis <- function(dat, sampleIDs.group1, sampleIDs.group2) {
   res <- topTable(fit, coef=2, number=Inf, sort.by="none")
   res <- data.frame(featureID=rownames(res), res, stringsAsFactors = F)
   return(arrange(res,P.Value))
+}
+
+
+
+plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
+
+  orgs<-setdiff(annotes$altID,pats)
+
+
+  ##now compute the correlation values
+  dlist<-lapply(orgs,function(pat){
+ 
+    iannote<-subset(annotes,altID==pat)%>%
+      dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
+
+    norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
+    norcors<-sapply(setdiff(rownames(iannote),norm),function(x) 
+      cor(mat[,norm],mat[,x],method='spearman'))
+    
+    pdat<-iannote%>%subset(experimentalCondition!="None")%>%
+      dplyr::select(Media,Cytokines,Forskolin)%>%
+      cbind(Similarity=norcors)
+  
+    return(pdat)
+  })
+
+  names(dlist)<-orgs
+  ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+    tibble::rownames_to_column('altID')
+
+  write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
+
+  names(dlist)<-orgs
+  plist<-lapply(orgs,function(pat){
+    pdat<-dlist[[pat]]
+    pdat%>%ggplot(aes(y=Similarity,x=Media,shape=Forskolin,color=Cytokines))+
+    geom_point(aes(size=10))+scale_colour_manual(values=pal)+
+    ggtitle(pat)
+  })
+  
+
+  library(cowplot)
+  res=cowplot::plot_grid(plotlist=plist)
+  ggsave(filename=paste0(prefix,'corPlots.pdf'),res,width=10)
+
 }

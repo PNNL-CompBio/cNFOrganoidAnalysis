@@ -58,7 +58,7 @@ mat<-lv.df%>%
 ##now compute how many genes are differentially expressed
 condlist<-c('DMEM','StemPro','Cytokines','Mammo','Forskoline')
 all.d<-lapply(condlist,function(x){
-  plotDifferencesInCondition(mat,biga,x)  
+  plotDifferencesInCondition(mat,biga,x,'LVs')  
   
 })
 names(all.d)<-condlist

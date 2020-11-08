@@ -22,44 +22,6 @@ pheatmap(cor(mat,method='spearman'),
          filename=paste0('heatmapOfAllConditions.pdf'))
 
 
-orgs<-setdiff(annotes$altID,pats)
-
-
-##now compute the correlation values
-dlist<-lapply(orgs,function(pat){
-  ##tannotes<-subset(annotes, individualID%in%c(pat,pats))%>%
-    #dplyr::select(-individualID)
-  iannote<-subset(annotes,altID==pat)%>%
-    dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
-
-  norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
-  norcors<-sapply(setdiff(rownames(iannote),norm),function(x) 
-    cor(mat[,norm],mat[,x],method='spearman'))
-  pdat<-iannote%>%subset(experimentalCondition!="None")%>%
-    dplyr::select(Media,Cytokines,Forskolin)%>%
-    cbind(Similarity=norcors)
-  
-  return(pdat)
-})
-
-names(dlist)<-orgs
-ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
-  tibble::rownames_to_column('altID')
-
-write.csv(ddf,'orgCorrelations.csv',row.names=F)
-
-names(dlist)<-orgs
-plist<-lapply(orgs,function(pat){
-  pdat<-dlist[[pat]]
-  pdat%>%ggplot(aes(y=Similarity,x=Media,shape=Forskolin,color=Cytokines))+
-    geom_point(aes(size=10))+scale_colour_manual(values=pal)+
-    ggtitle(pat)
-})
-
-library(cowplot)
-res=cowplot::plot_grid(plotlist=plist)
-ggsave(filename='corPlots.pdf',res,width=10)
-
 
 mat2<-rnaseq%>%
   subset(specimenID%in%specs)%>%
@@ -89,7 +51,10 @@ ggsave('cNFPatients.pdf',p2,width=10)
 
 condlist<-c('DMEM','StemPro','Cytokines','Mammo','Forskoline')
 all.d<-lapply(condlist,function(x){
-  plotDifferencesInCondition(mat,biga,x)  
+  plotDifferencesInCondition(mat,biga,x,'geneExpression')  
   
 })
 names(all.d)<-condlist
+
+plotCorrelationBetweenSamps(mat,annotes,'geneExpression')
+
