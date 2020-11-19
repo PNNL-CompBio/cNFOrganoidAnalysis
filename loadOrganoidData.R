@@ -52,7 +52,7 @@ for(x in c('kines','Forskoline')){
 annotes<-annotes%>%dplyr::rename(Cytokines='kines')#%>%dplyr::select(-experimentalCondition)
 nannotes<-apply(annotes,2,as.character)
 rownames(nannotes)<-rownames(annotes)
-
+orgs<-subset(annotes,experimentalCondition!='NaN')$altID
 biga<-annotes%>% 
   subset(altID%in%orgs)%>%
   tibble::rownames_to_column('specimenID')%>%
@@ -71,7 +71,16 @@ mat<-rnaseq%>%
 
 vars<-apply(mat,1,var,na.rm=T)%>%sort(decreasing=T)
   
-plotDifferencesInCondition<-function(mat,biga,cond='None',dataType='geneExpression'){
+#' getDifferencesInCOndition
+#' Filters for a particular condition and data type
+#' Computes limma differences at a p-value <0.05
+#' @param mat
+#' @param biga
+#' @param cond
+#' @param dataType
+#' @param doPlot
+#' @return number of genes
+getDifferencesInCondition<-function(mat,biga,cond='None',dataType='geneExpression',doPlot=TRUE){
  print(cond)
   p1<-biga%>%dplyr::rename(val=cond)%>%
     subset(val==TRUE)
@@ -83,7 +92,7 @@ plotDifferencesInCondition<-function(mat,biga,cond='None',dataType='geneExpressi
   mres<-subset(res,adj.P.Val<0.05)
   numGenes= nrow(mres)
 
-  if(numGenes>1){
+  if(numGenes>1 && doPlot){
     pheatmap(mat[mres$featureID[1:min(50,numGenes)],biga$specimenID],cellheight=10, cellwidth=10,
              annotation_col = as.data.frame(nannotes,stringsAsFactors = FALSE)%>%dplyr::select(-experimentalCondition),
              filename=paste0(cond,'top50',dataType,'.pdf'))
@@ -218,7 +227,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
   ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
     tibble::rownames_to_column('altID')
 
-  write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
+  #write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
 
   names(dlist)<-orgs
   plist<-lapply(orgs,function(pat){
@@ -232,5 +241,6 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
   library(cowplot)
   res=cowplot::plot_grid(plotlist=plist)
   ggsave(filename=paste0(prefix,'corPlots.pdf'),res,width=10)
+  return(ddf)
 
 }
