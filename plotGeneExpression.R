@@ -11,16 +11,23 @@ ggsave('pcaOfAllSamples.png',p1)
 p2<-umap(t(mat), data=nannotes[colnames(mat),])
 
 sannotes<-nannotes%>%as.data.frame(stringsAsFactors=FALSE)%>%
-  dplyr::select(Media,Cytokines,Forskoline,individualID)%>%
-  dplyr::mutate(cohort=ifelse(individualID%in%pats,'cNF','Organoid'))
+  dplyr::mutate(cohort=ifelse(altID%in%pats,'cNF','Organoid'))%>%
+  dplyr::select(Media,Cytokines,Forskoline,individualID,cohort)
+
 rownames(sannotes)<-rownames(nannotes)
+
+annote.colors<-lapply(names(sannotes),function(x) c(`FALSE`='white',`TRUE`='black'))
+names(annote.colors)<-names(sannotes)
+annote.colors$Media<-c(None='white',StemPro='black',Mammo='darkgrey',DMEM='lightgrey')
+annote.colors$cohort<-c(cNF='white',Organoid='black')
+
 
 pheatmap(cor(mat,method='spearman'),
          annotation_col = sannotes%>%
            dplyr::select(-individualID),
          annotation_row=sannotes%>%
            dplyr::select(-individualID),
-          cellheight=10,cellwidth = 10,
+          cellheight=10,cellwidth = 10, annotation_colors=annote.colors,
          filename=paste0('heatmapOfAllConditions.pdf'))
 
 

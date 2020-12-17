@@ -3,7 +3,7 @@
 
 library(immunedeconv)  
 source("loadOrganoidData.R")
-
+library(ggplot2)
 
 #' runImmuneDeconv
 #' @param tab
@@ -42,9 +42,6 @@ mc<-runImmuneDeconv(rnaseq,'mcp_counter')
 cs<-runImmuneDeconv(rnaseq,'cibersort')
 
 condlist<-c('DMEM','StemPro','Cytokines','Mammo','Forskoline')
-mat<-mc%>%pivot_wider(-c(method,experimentalCondition),values_from=score,names_from=specimenID)%>%
-    tibble::column_to_rownames('cell_type')
-  
 plot.annotes<-biga%>%
     select(c(Cytokines,Forskoline,DMEM,Mammo,StemPro,specimenID))%>%
     mutate(Cytokines=as.character(Cytokines))%>%
@@ -52,37 +49,39 @@ plot.annotes<-biga%>%
   mutate(DMEM=as.character(DMEM))%>%mutate(Mammo=as.character(Mammo))%>%mutate(StemPro=as.character(StemPro))%>%
   tibble::column_to_rownames('specimenID')
 
-pheatmap(log10(1+mat),annotation_col=plot.annotes,filename = 'mcpTypes.pdf',width=10)
+annote.colors<-lapply(names(plot.annotes),function(x) c(`FALSE`='white',`TRUE`='black'))
+names(annote.colors)<-names(plot.annotes)
+
+
+##MCP Counter
+mat<-mc%>%
+  pivot_wider(-c(method,experimentalCondition),values_from=score,names_from=specimenID)%>%
+    tibble::column_to_rownames('cell_type')
+  
+
+pheatmap(log10(1+mat),annotation_col=plot.annotes,cellheight=10,
+         cellwidth=10,annotation_colors=annote.colors,filename = 'mcpTypes.pdf',width=18)
 
 all.d<-lapply(condlist,function(x){
-  getDifferencesInCondition(mat,biga,x,'mcpTypes',doPlots=FALSE)  
+  getDifferencesInCondition(mat,biga,x,'mcpTypes',doPlot=FALSE)  
 })
 names(all.d)<-condlist
 cellCors<-data.frame(all.d)%>%mutate(dataType='mcpCounterPreds')
-
 ddf<-plotCorrelationBetweenSamps(mat,annotes,'mcpCounter')
 
+##CIBERSORT
 
-mat<-cs%>%pivot_wider(-c(method,experimentalCondition),values_from=score,names_from=specimenID)%>%
+mat<-cs%>%
+  pivot_wider(-c(method,experimentalCondition),values_from=score,names_from=specimenID)%>%
   tibble::column_to_rownames('cell_type')
 
 all.c<-lapply(condlist,function(x){
-    getDifferencesInCondition(mat,biga,x,'mcpCounterTypes',doPlots=FALSE)  
+    getDifferencesInCondition(mat,biga,x,'Cibersort',doPlot=FALSE)  
 })
-
+names(all.c)<-condlist
 cellCors<-data.frame(all.c)%>%mutate(dataType='cibersortPreds')%>%rbind(cellCors)
+ddf<-plotCorrelationBetweenSamps(mat,annotes,'cibersort')
 
-
-pheatmap(log10(1+mat),annotation_col=plot.annotes,filename = 'ciberSortTypes.pdf',width=10)
-
-
-all.x<-lapply(condlist,function(x){
-    getDifferencesInCondition(mat,biga,x,'xcellTypes',doPlots=FALSE)  
-})
-names(all.x)<-condlist
-
-cellCors<-data.frame(all.x)%>%mutate(dataType='xCellPreds')%>%
-  rbind(cellCors)
-  
-##now do a per-cell type correlation
-dcors<-plotCorrelationBetweenSamps(mat,annotes,'xcell')
+pheatmap(log10(1+mat),annotation_col=plot.annotes,cellheight=10,
+         cellwidth=10,annotation_colors=annote.colors,
+         filename = 'ciberSortTypes.pdf',width=18)

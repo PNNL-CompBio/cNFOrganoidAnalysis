@@ -22,7 +22,12 @@ tabres2 = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individua
 rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
   distinct()%>%
   mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C'),'NF0007-2- M+C'))%>%
-  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C+F'),'NF0007-2- M+C+F'))
+  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C+F'),'NF0007-2- M+C+F'))%>%
+  mutate(specimenID=str_replace_all(specimenID,"S $","S"))
+
+badSpecs=c("NF0009-1 M","NF0009-1 M+C","NF0002-8-19- M+C+F","NF0002-8-19- D+C","NF0002-8-19- D+C+F","NF0002-8-19- S+C")
+
+rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
 
 annotes<-rnaseq%>%
   dplyr::select(specimenID,individualID,experimentalCondition)%>%
@@ -213,6 +218,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
       dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
 
     norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
+    print(norm)
     norcors<-sapply(setdiff(rownames(iannote),norm),function(x) 
       cor(mat[,norm],mat[,x],method='spearman'))
     
