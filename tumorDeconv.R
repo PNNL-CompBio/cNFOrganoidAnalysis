@@ -41,6 +41,13 @@ xc<-runImmuneDeconv(rnaseq,'xcell')
 mc<-runImmuneDeconv(rnaseq,'mcp_counter')
 cs<-runImmuneDeconv(rnaseq,'cibersort')
 
+
+full.tab<-rbind(xc,mc,cs)
+
+write.table(full.tab,'file.tsv',sep='\t',quote=FALSE,row.names=F)
+tab<-syn$build_table('cNF Organoid Deconvolution','syn11374354','file.tsv')
+sync$store(tab)
+
 condlist<-c('DMEM','StemPro','Cytokines','Mammo','Forskoline')
 plot.annotes<-biga%>%
     select(c(Cytokines,Forskoline,DMEM,Mammo,StemPro,specimenID))%>%
