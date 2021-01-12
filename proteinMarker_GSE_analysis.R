@@ -50,7 +50,6 @@ library(org.Hs.eg.db)
 do_gseGO_analysis <- function(sigs,prot){
   genelist = sigs$corVal
   names(genelist) = sigs$Symbol
-  print(genelist)
   gse = gseGO(geneList=genelist,ont="ALL",keyType="SYMBOL",OrgDb=org.Hs.eg.db,pAdjustMethod = 'BH',pvalueCutoff = 0.05)
   write.table(gse,toString(sprintf("gsego_%s.tsv",prot)),sep="\t")
   return(gse)
@@ -58,10 +57,8 @@ do_gseGO_analysis <- function(sigs,prot){
 
 gene_set_analysis <- function(master_table) {
   for (prot in unique(master_table$proteinMarker)) {
-    print(prot)
     subset_table = master_table[which(master_table$proteinMarker == prot),]
     sigs = generate_ranked_genelist(subset_table,'pearson',prot)
-    print(sigs)
     gse = do_gseGO_analysis(sigs,prot)
     ## gse defined for further plotting analysis
   }
