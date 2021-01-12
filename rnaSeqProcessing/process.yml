@@ -1,6 +1,6 @@
 synapse_config:
   class: File
-  path: "home/bade228/Programming/synapse/credentials/.synapseConfig"
+  path: "/home/sgosline/.synapseConfig"
 idquery: SELECT specimenID,id FROM syn11601495 WHERE ( ( "fileFormat" = 'sf' ) ) and  assay = 'rnaSeq' order by specimenID
 sample_query: SELECT distinct specimenID,individualID,diagnosis,tumorType,resourceType,experimentalCondition,studyName,consortium,fundingAgency,dataType,assay,study, species,nf1Genotype,nf2Genotype,isCellLine FROM syn11601495 WHERE ( ( "fileFormat" = 'sf' ) ) and  assay = 'rnaSeq'
 full_query: SELECT id,specimenID,individualID,diagnosis,tumorType,resourceType,experimentalCondition,studyName,consortium,fundingAgency,dataType,assay,study, species,nf1Genotype,nf2Genotype,isCellLine FROM syn11601495 WHERE ( ( "fileFormat" = 'sf' ) ) and  assay = 'rnaSeq'
