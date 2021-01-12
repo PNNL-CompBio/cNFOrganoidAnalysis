@@ -1,4 +1,3 @@
-#condaenv = "Users/bade228/opt/anaconda3"
 library(synapser)
 library(synapserutils)
 library(dplyr)
