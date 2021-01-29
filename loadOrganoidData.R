@@ -42,7 +42,7 @@ pannotes<-rnaseq%>%select(specimenID,individualID,experimentalCondition)%>%
 annotes<-annotes%>%
   full_join(pannotes)%>%
   replace_na(list(Cytokines=FALSE,Media='None',Forskoline=FALSE))%>%
-  mutate(altID='specimenID')%>%
+  mutate(altID=specimenID)%>%
   tibble::column_to_rownames('specimenID')
 
 pats=unique(pannotes$specimenID[grep('patient',pannotes$individualID)])
