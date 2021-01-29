@@ -4,7 +4,7 @@ source("loadOrganoidData.R")
 
 ##first we download the data from the two tables
 deconv<-sync$tableQuery("select * from syn23667404")$asDataFrame()
-ihc<-sync$tableQuery("select * from syn23667394")$asDataFrame()
+ihc<-sync$tableQuery("select * from syn24175711")$asDataFrame()
 
 
 #join the data, should automatically work by specimenID

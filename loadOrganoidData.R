@@ -21,43 +21,39 @@ tabres2 = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individua
 
 rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
   distinct()%>%
-  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C'),'NF0007-2- M+C'))%>%
-  mutate(specimenID=str_replace_all(specimenID,fixed('NF0007-2-M+C+F'),'NF0007-2- M+C+F'))%>%
-  mutate(specimenID=str_replace_all(specimenID,"S $","S"))
+  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-D','NF0007-4 D'))%>%
+  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S','NF0007-4 S'))%>%
+  mutate(experimentalCondition=str_replace_all(experimentalCondition,'Cytkines,Mammo','Cytokines,Mammo'))
 
-badSpecs=c("NF0009-1 M","NF0009-1 M+C","NF0002-8-19- M+C+F","NF0002-8-19- D+C","NF0002-8-19- D+C+F","NF0002-8-19- S+C")
+  
+
+badSpecs=c("NF0009-1 M","NF0009-1-M+C","NF0002-8-19-M+C+F","NF0002-8-19-D+C",
+           "NF0002-8-19-D+C+F","NF0002-8-19-S+C")
 
 rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
 
-annotes<-rnaseq%>%
-  dplyr::select(specimenID,individualID,experimentalCondition)%>%
-  separate(specimenID,into=c('altID','extra'),sep=' ',remove=F)%>%
-  mutate(altID=stringr::str_replace(altID,'-$',''))%>%
-  dplyr::select(-extra)%>%
-  distinct()
 
-rownames(annotes)<-c()
-annotes<-annotes%>%tibble::column_to_rownames('specimenID')
 
-##update annote
-annotes$Media<-rep("None",nrow(annotes))
-annotes$Media[grep("DMEM",annotes$experimentalCondition)]<-'DMEM'
-annotes$Media[grep("StemPro",annotes$experimentalCondition)]<-'StemPro'
-annotes$Media[grep('Mammo',annotes$experimentalCondition)]<-'Mammo'
+annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()
+pannotes<-rnaseq%>%select(specimenID,individualID,experimentalCondition)%>%
+  distinct()%>%
+  subset()
 
-pats=annotes$altID[grep('patient',annotes$individualID)]
+annotes<-annotes%>%
+  full_join(pannotes)%>%
+  replace_na(list(Cytokines=FALSE,Media='None',Forskoline=FALSE))%>%
+  mutate(altID='specimenID')%>%
+  tibble::column_to_rownames('specimenID')
+
+pats=unique(pannotes$specimenID[grep('patient',pannotes$individualID)])
+
 specs<-c(rownames(annotes)[grep('patient',rownames(annotes))],
          'NF0002-8-19 M','NF0009-1- M+C+F','NF0012-3-6 M')
 
-for(x in c('kines','Forskoline')){
-  annotes[[x]]<-FALSE
-  annotes[[x]][grep(x,annotes$experimentalCondition)]<-TRUE
- # annotes[[x]]=as.character(annotes)
-}
-annotes<-annotes%>%dplyr::rename(Cytokines='kines')#%>%dplyr::select(-experimentalCondition)
+
 nannotes<-apply(annotes,2,as.character)
 rownames(nannotes)<-rownames(annotes)
-orgs<-subset(annotes,experimentalCondition!='NaN')$altID
+orgs<-subset(annotes,experimentalCondition!='NaN')%>%rownames()
 biga<-annotes%>% 
   subset(altID%in%orgs)%>%
   tibble::rownames_to_column('specimenID')%>%
