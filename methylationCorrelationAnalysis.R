@@ -35,7 +35,7 @@ plist<-ddf%>%
 cowplot::plot_grid(plotlist=plist)   
 fname=paste0(var,'MethylationAnalysis.pdf')
 ggsave(filename=fname,width=12)
-sync$store(fname,parentId='syn24216715')
+sync$store(syn$File(fname,parentId='syn24216715'))
 }
 #
  
