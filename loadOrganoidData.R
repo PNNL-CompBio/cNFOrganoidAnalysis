@@ -6,6 +6,7 @@ library(dplyr)
 library(tidyr)
 library(nationalparkcolors)
 library(pheatmap)
+library(ggplot2)
 ##get metadata file
 #condaenv="C:\\Users\\gosl241\\OneDrive - PNNL\\Documents\\GitHub\\amlresistancenetworks\\renv\\python\\r-reticulate\\"
 
@@ -206,7 +207,6 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
 
   orgs<-setdiff(annotes$altID,pats)
 
-
   ##now compute the correlation values
   dlist<-lapply(orgs,function(pat){
  
@@ -216,11 +216,12 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
     print(norm)
     norcors<-sapply(setdiff(rownames(iannote),norm),function(x) 
-      cor(mat[,norm],mat[,x],method='spearman'))
+      cor(mat[,norm],mat[,x],method='spearman',use='pairwise.complete.obs'))
     
     pdat<-iannote%>%subset(experimentalCondition!="None")%>%
       dplyr::select(Media,Cytokines,Forskolin)%>%
-      cbind(Similarity=norcors)
+      cbind(Similarity=norcors)%>%
+      replace_na(list(Similarity=0.0))
   
     return(pdat)
   })
