@@ -11,6 +11,7 @@ ihc<-sync$tableQuery("select * from syn24175711")$asDataFrame()
 imat<-ihc%>%
   dplyr::select(specimenID,proteinMarker,Fraction_DAB_stained)%>%
   distinct()%>%
+    subset(proteinMarker!='Pan-Cytokeritin')%>%
   pivot_wider(names_from=proteinMarker,values_from=Fraction_DAB_stained)%>%
   tibble::column_to_rownames('specimenID')
 
@@ -30,6 +31,11 @@ iannotes<-ihc%>%
 #  distinct()
 
 res<-plotCorrelationBetweenSamps(t(imat),iannotes,prefix='IHC')
+
+##TODO: store table on Synapse
+write.table(res,file='tmp.csv',sep=',',row.names=F)
+sync$store(syn$build_table('IHC-based sample correlations','syn11374354','tmp.csv'))
+
 sync$store(syn$File('IHCcorplots.pdf',parentId='syn24226005'))
 
 ##format as matrix

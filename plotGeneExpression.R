@@ -5,13 +5,21 @@ source('loadOrganoidData.R')
 
 library(ggfortify)
 library(umap)
+
+
+### Plot PCA of expression data
 p1<-autoplot(prcomp(t(mat)),data=nannotes[colnames(mat),],shape='Media',colour='individualID')
+#p2<-umap(t(mat), data=nannotes[colnames(mat),])
 ggsave('pcaOfAllSamples.png',p1)
 
-p2<-umap(t(mat), data=nannotes[colnames(mat),])
+sync$store(syn$File('pcaOfAllSamples.png',parentId='syn24827084'))
 
+
+patindiv<-annotes[pats,'individualID']
+
+###plot heatmap of correlations
 sannotes<-nannotes%>%as.data.frame(stringsAsFactors=FALSE)%>%
-  dplyr::mutate(cohort=ifelse(altID%in%pats,'cNF','Organoid'))%>%
+  dplyr::mutate(cohort=ifelse(individualID%in%patindiv,'cNF','Organoid'))%>%
   dplyr::select(Media,Cytokines,Forskoline,individualID,cohort)
 
 rownames(sannotes)<-rownames(nannotes)
@@ -28,8 +36,8 @@ pheatmap(cor(mat,method='spearman'),
          annotation_row=sannotes%>%
            dplyr::select(-individualID),
           cellheight=10,cellwidth = 10, annotation_colors=annote.colors,
-         filename=paste0('heatmapOfAllConditions.pdf'))
-
+         filename=paste0('heatmapOfAllCorrelations.pdf'))
+sync$store(syn$File('heatmapOfAllCorrelations.pdf',parentId='syn24827084'))
 
 
 mat2<-rnaseq%>%
@@ -40,7 +48,12 @@ mat2<-rnaseq%>%
   tibble::column_to_rownames('Symbol')%>%as.matrix()
 
 
-ddf<-plotCorrelationBetweenSamps(mat,annotes,'geneExpression')
+shared<-intersect(colnames(mat),rownames(annotes))
+ddf<-plotCorrelationBetweenSamps(mat[,shared],annotes[shared,],'geneExpression')
+
+sync$store(syn$File('geneExpressioncorPlots.pdf',parentId='syn24827084'))
+write.table(ddf,file='tmp.csv',sep=',',row.names=F)
+sync$store(syn$build_table('RNAseq-based sample correlations','syn11374354','tmp.csv'))
 
 badsamps<-subset(ddf,Similarity<0.6)$altID
 print(paste('We have',length(badsamps),'bad samples we are removing'))
@@ -56,7 +69,7 @@ cnfs<-annotes%>%
   as.data.frame()%>%
   tibble::rownames_to_column('cNF Sample')
 
-#p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('Organoid')%>%
+#p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column(Organoid')%>%
 #  tidyr::pivot_longer(others,names_to='cNF Sample',values_to='Similarity')%>%
 #  left_join(cnfs)%>%
 #  ggplot(aes(x=individualID,y=Similarity,fill=Organoid))+geom_boxplot()+scale_fill_manual(values=pal)

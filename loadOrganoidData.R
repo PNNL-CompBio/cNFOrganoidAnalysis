@@ -20,50 +20,61 @@ return(sync)
 tabres = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individualID,experimentalCondition FROM syn22878645')
 tabres2 = sync$tableQuery('SELECT zScore,totalCounts,specimenID,Symbol,individualID,experimentalCondition FROM syn21222341')
 
-rnaseq=rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
+rnaseq<-rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
   distinct()%>%
-  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-D','NF0007-4 D'))%>%
-  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S','NF0007-4 S'))%>%
+  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-D$','NF0007-4 D'))%>%
+  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S$','NF0007-4 S'))%>%
+    mutate(specimenID=str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
   mutate(experimentalCondition=str_replace_all(experimentalCondition,'Cytkines,Mammo','Cytokines,Mammo'))
 
-  
 
+##remove bad species from annnotations and RNA seq
 badSpecs=c("NF0009-1 M","NF0009-1-M+C","NF0002-8-19-M+C+F","NF0002-8-19-D+C",
            "NF0002-8-19-D+C+F","NF0002-8-19-S+C")
+
+annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()%>%
+  subset(!specimenID%in%badSpecs)
+#    tibble::remove_rownames()%>%
+#  tibble::column_to_rownames('specimenID')
 
 rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
 
 
-
-annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()
 pannotes<-rnaseq%>%select(specimenID,individualID,experimentalCondition)%>%
   distinct()%>%
-  subset()
-
-annotes<-annotes%>%
-  full_join(pannotes)%>%
-  replace_na(list(Cytokines=FALSE,Media='None',Forskoline=FALSE))%>%
-  mutate(altID=specimenID)%>%
+  tibble::remove_rownames()%>%
   tibble::column_to_rownames('specimenID')
 
-pats=unique(pannotes$specimenID[grep('patient',pannotes$individualID)])
+pats=rownames(pannotes)[grep('patient',rownames(pannotes))]
 
-specs<-c(rownames(annotes)[grep('patient',rownames(annotes))],
-         'NF0002-8-19 M','NF0009-1- M+C+F','NF0012-3-6 M')
+#annotes<-annotes%>%
+#  full_join(pannotes)%>%
+#  replace_na(list(Cytokines=FALSE,Media='None',Forskoline=FALSE))%>%
+#  mutate(altID=specimenID)%>%
+#  tibble::column_to_rownames('specimenID')
 
 
-nannotes<-apply(annotes,2,as.character)
-rownames(nannotes)<-rownames(annotes)
-orgs<-subset(annotes,experimentalCondition!='NaN')%>%rownames()
+
+#specs<-c(rownames(annotes)[grep('patient',rownames(annotes))],
+#         'NF0002-8-19 M','NF0009-1- M+C+F','NF0012-3-6 M')
+
+
+nannotes<-apply(annotes,2,as.character)%>%
+  as.data.frame()%>%
+  tibble::remove_rownames()%>%
+  tibble::column_to_rownames('specimenID')
+
+orgs<-subset(annotes,experimentalCondition!='NaN')%>%select(specimenID)
 biga<-annotes%>% 
-  subset(altID%in%orgs)%>%
-  tibble::rownames_to_column('specimenID')%>%
+  subset(specimenID%in%orgs$specimenID)%>%
   dplyr::select(-c(individualID,experimentalCondition))%>%
   mutate(val=1) %>% 
   pivot_wider(names_from = Media,values_from = val) %>% 
-  mutate(across(-c(Cytokines,Forskoline,altID,specimenID), ~replace_na(.x, 0))) %>%
-  mutate(across(-c(Cytokines,Forskoline,altID,specimenID), ~ifelse(.x==1, TRUE,FALSE)))
-
+  mutate(across(-c(Cytokines,Forskoline,specimenID), ~replace_na(.x, 0))) %>%
+  mutate(across(-c(Cytokines,Forskoline,specimenID), ~ifelse(.x==1, TRUE,FALSE)))
+annotes<-annotes%>%
+  tibble::remove_rownames()%>%
+  tibble::column_to_rownames('specimenID')
 
 mat<-rnaseq%>%
   dplyr::select(specimenID,zScore,Symbol)%>%
@@ -205,37 +216,39 @@ limmaTwoFactorDEAnalysis <- function(dat, sampleIDs.group1, sampleIDs.group2) {
 
 plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
 
-  orgs<-setdiff(annotes$altID,pats)
+  patids<-grep('patient',annotes$individualID)
+  
+  samps<-annotes%>%
+    subset(!individualID%in%pats)%>%
+    subset(Media=='None')%>%
+    rownames()
 
   ##now compute the correlation values
-  dlist<-lapply(orgs,function(pat){
+  dlist<-lapply(samps,function(norm){
  
-    iannote<-subset(annotes,altID==pat)%>%
-      dplyr::select(experimentalCondition,Media,Cytokines,Forskolin='Forskoline')
-
-    norm=iannote%>%subset(experimentalCondition=='None')%>%rownames()
-    print(norm)
-    norcors<-sapply(setdiff(rownames(iannote),norm),function(x) 
+    others<-rownames(annotes)[grep(norm,rownames(annotes))]
+    #print(others)
+    norcors<-sapply(setdiff(others,norm),function(x) 
       cor(mat[,norm],mat[,x],method='spearman',use='pairwise.complete.obs'))
     
-    pdat<-iannote%>%subset(experimentalCondition!="None")%>%
-      dplyr::select(Media,Cytokines,Forskolin)%>%
+    pdat<-annotes[others,]%>%subset(experimentalCondition!="None")%>%
+      dplyr::select(Media,Cytokines,Forskoline)%>%
       cbind(Similarity=norcors)%>%
       replace_na(list(Similarity=0.0))
   
     return(pdat)
   })
 
-  names(dlist)<-orgs
+  names(dlist)<-samps
   ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
     tibble::rownames_to_column('altID')
 
   #write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
 
-  names(dlist)<-orgs
-  plist<-lapply(orgs,function(pat){
+  names(dlist)<-samps
+  plist<-lapply(samps,function(pat){
     pdat<-dlist[[pat]]
-    pdat%>%ggplot(aes(y=Similarity,x=Media,shape=Forskolin,color=Cytokines))+
+    pdat%>%ggplot(aes(y=Similarity,x=Media,shape=Forskoline,color=Cytokines))+
     geom_point(aes(size=10))+scale_colour_manual(values=pal)+
     ggtitle(pat)
   })
