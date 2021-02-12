@@ -1,6 +1,6 @@
 ##compare IHC across samples
 
-source("loadOrganoidData.R")
+source("../loadOrganoidData.R")
 
 ihc<-sync$tableQuery("select * from syn24175711")$asDataFrame()
 

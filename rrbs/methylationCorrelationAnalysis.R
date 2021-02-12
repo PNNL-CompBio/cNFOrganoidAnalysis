@@ -1,7 +1,7 @@
 ## pull methylation data and plot correlations
 
 
-source("loadOrganoidData.R")
+source("../loadOrganoidData.R")
 #get data from anela's table
 tab <- sync$tableQuery("SELECT * FROM syn24216591")$asDataFrame()
 
