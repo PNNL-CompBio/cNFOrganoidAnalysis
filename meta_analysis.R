@@ -15,6 +15,7 @@ file.metadata<-sync$tableQuery("SELECT name,specimenID,individualID FROM syn1160
 
 annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()
 
+pal = wesanderson::wes_palette('Darjeeling1')
 
 #now we have proper metadata
 res<-file.metadata%>%
@@ -30,6 +31,10 @@ nann<-annotes%>%
   mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
   mutate(extras=stringr::str_replace_all(extras,"^$","None"))
 
+##now merge into a single table
+vars <- c('individualID','specimenID','Similarity','dataType',
+          'Media','extras')
+
 methyl.cor<-res%>%
   select(individualID,specimenID,linearR2)%>%
   mutate(Similarity=sqrt(linearR2))%>%
@@ -37,35 +42,56 @@ methyl.cor<-res%>%
   mutate(dataType='RRBS')%>%
   mutate(specimenID=stringr::str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
   mutate(specimenID=stringr::str_replace_all(specimenID,'NF0008-1-M$','NF0008-1 M'))%>%
-  select(-linearR2)%>%left_join(nann)
+  select(-linearR2)%>%left_join(nann)%>%
+  select(vars)
 
 #get rnaseq cor
 rtab <- sync$tableQuery("SELECT * FROM syn24828132")$asDataFrame()%>%
   rename(specimenID='altID',individualID='Patient')%>%
   dplyr::select(specimenID,Similarity)%>%
   mutate(dataType='rnaSeq')%>%
-  left_join(nann,by='specimenID')
+  left_join(nann,by='specimenID')%>%
+  select(vars)
 
 
 
 #get ihc cor
 #TODO
+itab <- sync$tableQuery("SELECT * from syn24988958")$asDataFrame()%>%
+  rename(specimenID='altID',individualID='Patient')%>%
+  dplyr::select(specimenID,Similarity)%>%
+  mutate(dataType='IHC')%>%
+  left_join(nann,by='specimenID')%>%
+  select(vars)
 
 
+ctab <- sync$tableQuery('SELECT * from syn25954974')$asDataFrame()%>%
+  dplyr::select(specID,Similarity='corVal',specimenID)%>%
+  mutate(dataType='flow cytometry')%>%
+  left_join(nann,by='specimenID')%>%
+  select(vars)
 
-##now merge into a single table
-vars <- c('individualID','specimenID','Similarity','dataType',
-          'Media','extras')
 
-full.tab<-rbind(methyl.cor,rtab)%>%
-  select(vars)%>%
+full.tab<-rbind(methyl.cor,rtab,itab,ctab)%>%
   drop_na()%>%
   mutate(Media=as.factor(Media))
 
 ##now plot
 p<-full.tab%>%
-  ggplot(aes(x=Media,y=Similarity,fill=extras,shape=dataType,color=extras))+
-  geom_boxplot(aes(alpha=0.8),outlier.shape=NA)+
-  geom_jitter()+scale_fill_viridis_d()+scale_color_viridis_d()
-ggsave('combinedCorrelation.png',p)
-sync$store(syn$File('combinedCorrelation.png',parentId='syn11376065'))
+  ggplot(aes(x=extras,y=Similarity))+
+  geom_boxplot(aes(alpha=0.8,fill=extras),outlier.shape=NA)+
+  geom_jitter(aes(color=extras,shape=dataType))+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
+
+ggsave('combinedCorrelation.pdf',p,width=6)
+sync$store(syn$File('combinedCorrelation.pdf',parentId='syn11376065'))
+
+##now plot
+p2<-full.tab%>%
+  ggplot(aes(x=dataType,y=Similarity))+
+  geom_boxplot(aes(alpha=0.8,fill=dataType),outlier.shape=NA)+
+  geom_jitter(aes(color=dataType,shape=extras))+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
+
+ggsave('altCorrelation.pdf',p,width=6)
+sync$store(syn$File('altCorrelation.pdf',parentId='syn11376065'))
