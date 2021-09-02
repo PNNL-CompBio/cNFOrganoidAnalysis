@@ -93,5 +93,19 @@ p2<-full.tab%>%
   geom_jitter(aes(color=dataType,shape=extras))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
 
-ggsave('altCorrelation.pdf',p,width=6)
+ggsave('altCorrelation.pdf',p2,width=6)
 sync$store(syn$File('altCorrelation.pdf',parentId='syn11376065'))
+
+
+##now plot
+p3<-full.tab%>%
+  ggplot(aes(x=dataType,y=Similarity))+
+  geom_boxplot(aes(alpha=0.8,fill=dataType),outlier.shape=NA)+
+  geom_jitter(aes(color=dataType,shape=individualID))+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
+
+ggsave('altCorrelation2.pdf',p3)
+sync$store(syn$File('altCorrelation2.pdf',parentId='syn11376065'))
+
+##table with mean. 
+full.tab%>%group_by(Media,extras)%>%summarize(meanSim=mean(Similarity),medSim=median(Similarity))%>%arrange(desc(meanSim))

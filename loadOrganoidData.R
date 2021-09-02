@@ -58,6 +58,12 @@ biga<-annotes%>%
   mutate(across(-c(Cytokines,Forskoline,specimenID), ~replace_na(.x, 0))) %>%
   mutate(across(-c(Cytokines,Forskoline,specimenID), ~ifelse(.x==1, TRUE,FALSE)))
 
+
+
+### get drug data
+drugData = sync$tableQuery('SELECT * FROM syn26145552')$asDataFrame()%>%
+  left_join(annotes,by='specimenID')
+
 annotes<-annotes%>%
   tibble::remove_rownames()%>%
   tibble::column_to_rownames('specimenID')
@@ -70,6 +76,9 @@ mat<-rnaseq%>%
 
 vars<-apply(mat,1,var,na.rm=T)%>%sort(decreasing=T)
   
+
+
+
 #' getDifferencesInCOndition
 #' Filters for a particular condition and data type
 #' Computes limma differences at a p-value <0.05
@@ -210,18 +219,20 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     subset(!individualID%in%patids)%>%
     subset(Media=='None')%>%rownames()
   
-  print(samps)
+  print(samps)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
   ##now compute the correlation values
   dlist<-lapply(samps,function(norm){
     print(norm)
-    iid<-fannotes[norm,'individualID']
+    iid<-annotes[norm,'individualID']
   
-    others<-rownames(subset(annotes,individualID==iid))#intersect(rownames(annotes)[grep(norm,rownames(annotes))],colnames(mat))
+    others<-setdiff(rownames(subset(annotes,individualID==iid)),norm)
+    others <- intersect(rownames(annotes)[grep(norm,rownames(annotes))],colnames(mat))
     print(others)
     norcors<-sapply(setdiff(others,norm),function(x) {
-      #print(x)
+    #  print(x)
       cor(mat[,norm],mat[,x],method='spearman',use='pairwise.complete.obs')})
-    pdat<-annotes[others,]%>%subset(experimentalCondition!="None")%>%
+    #print(norcors)
+    pdat<-annotes[setdiff(others,norm),]%>%subset(experimentalCondition!="None")%>%
       dplyr::select(Media,Cytokines,Forskoline)%>%
       cbind(Similarity=norcors)%>%
       replace_na(list(Similarity=0.0))
@@ -267,7 +278,8 @@ plotPatientCors<-function(mat,pannotes,nannotes,prefix='geneExpression'){
   patsonly<-grep('patient',corTab$Patient)
   corTab<-corTab[patsonly,]
   ##add in the cNF patient ids
-  corTab<-corTab%>%left_join(tibble::rownames_to_column(pannotes,'Patient'))%>%
+  corTab<-corTab%>%
+    left_join(tibble::rownames_to_column(pannotes,'Patient'))%>%
     select(Sample,Patient,Correlation,individualID)%>%distinct()%>%
     subset(Sample%in%orgs$specimenID)
   
