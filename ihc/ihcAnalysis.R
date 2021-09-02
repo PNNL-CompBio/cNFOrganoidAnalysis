@@ -11,14 +11,14 @@ ihc<-sync$tableQuery("select * from syn24175711")$asDataFrame()
 imat<-ihc%>%
   dplyr::select(specimenID,proteinMarker,Fraction_DAB_stained)%>%
   distinct()%>%
-    subset(!proteinMarker%in%c('Pan-Cytokeritin','Toluidine Blue'))%>%
-  pivot_wider(names_from=proteinMarker,values_from=Fraction_DAB_stained)%>%
-  tibble::column_to_rownames('specimenID')
+    subset(!proteinMarker%in%c('Pan-Cytokeratin','Toluidine Blue'))%>%
+  pivot_wider(names_from=proteinMarker,values_from=Fraction_DAB_stained,values_fn=list(Fraction_DAB_stained=mean))%>%
+  tibble::column_to_rownames('specimenID')%>%as.matrix()
 
 
 ##select out annotations
 iannotes<-ihc%>%
-  dplyr::select(individualID,specimenID)%>%
+  dplyr::select(individualID,specimenID)%>% 
   mutate(altID=specimenID)%>%distinct()%>%
   left_join(tibble::rownames_to_column(annotes,'specimenID'),by=c('specimenID','individualID'))%>%
   tibble::remove_rownames()%>%
@@ -43,7 +43,7 @@ sync$store(syn$File('IHCcorplots.pdf',parentId='syn24226005'))
 imat<-ihc%>%
   dplyr::select(specimenID,proteinMarker,Fraction_DAB_stained)%>%
   distinct()%>%
-  pivot_wider(names_from=proteinMarker,values_from=Fraction_DAB_stained,values_fill=-1)%>%
+  pivot_wider(names_from=proteinMarker,values_from=Fraction_DAB_stained,values_fn=list(Fraction_DAB_stained=mean),values_fill=-1)%>%
   tibble::column_to_rownames('specimenID')
 library(pheatmap)
 pheatmap(imat,cellwidth = 10,cellheight=10,annotation_row =select(iannotes,individualID),clustering_distance_rows = 'correlation',
