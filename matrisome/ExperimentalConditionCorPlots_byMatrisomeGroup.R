@@ -11,6 +11,7 @@ library(Biobase)
 library(GSVA)
 library(reticulate)
 library(stringi)
+library(cowplot)
 syn=reticulate::import('synapseclient')
 sync=syn$login()
 pal = nationalparkcolors::park_palette('Acadia')
@@ -37,14 +38,16 @@ rownames(restruc) <- restruc[,1]
 restruc2 <- restruc[,2:ncol(restruc)]
 mat.rest <- data.matrix(restruc2,rownames.force=TRUE)
 
+# +
 gset <- read.table(sync$get('syn26199051')$path,header=TRUE,sep='\t')
-gset <- gset[2:nrow(gset),]
-names <- colnames(gset)
+
 GSET <- list()
 for (x in names) {
   val = gset[[x]]
   GSET[[x]] = stri_remove_empty(val)
 }
+
+# -
 
 res <- gsva(mat.rest,GSET,method="gsva",min.sz=1,max.sz=Inf,mx.diff=TRUE,parallel.sz=1,verbose=TRUE)
 res <- t(as.data.frame(res))
@@ -100,24 +103,23 @@ for(x in c('kines','Forskoline')){
 
 annotes<-annotes%>%dplyr::rename(Cytokines='kines')#%>%dplyr::select(-experimentalCondition)
 
-mat <- master_table[,1:10]
+mat <- master_table[,-1]
 genelist <- colnames(mat)
-my_geneset <- unique(modtab$individualID)
+pat_names <- unique(modtab$individualID)
 alldat <- cbind(annotes,mat)
 
 plotCorrelationBetweenSamps<-function(mat,annotes,prefix){
   # filters out patient names
   orgs<-setdiff(annotes$altID,pats)
   # applied to every individualID in list
-  dlist <- lapply(my_geneset,function(x) {
+
+  dlist <- lapply(pat_names,function(x) {
     alldat = alldat[which(alldat$individualID==x),]
     alldat = alldat %>% dplyr::select(Media,Cytokines,Forskoline,prefix)
     colnames(alldat)[4] <- 'Similarity'
     return(alldat)
   })
-  
-  #write.csv(dlist,paste0(prefix,'orgCorrelations.csv'),row.names=F)
-  print(dlist)
+
   names(dlist)<-orgs
   plist<-lapply(orgs,function(pat){
     pdat<-dlist[[pat]]
@@ -129,8 +131,6 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix){
       ggtitle(pat)
   })
   
-  
-  library(cowplot)
   res=cowplot::plot_grid(plotlist=plist)
   ggsave(filename=paste0('experimentalConditionCorPlots/',prefix,'corPlots.pdf'),res,width=10)
   #return(ddf)
