@@ -68,6 +68,8 @@ sync$store(syn$build_table('Flow Cytometry-based sample correlations','syn113743
 
 sync$store(syn$File('flowCytocorplots.pdf',parentId='syn24226005'))
 
+
+
 mannotes<-fannotes%>%tibble::column_to_rownames('specID')
 library(pheatmap)
 pheatmap(fmat,cellwidth = 10,cellheight=10,

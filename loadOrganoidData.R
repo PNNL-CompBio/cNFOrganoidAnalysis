@@ -11,7 +11,7 @@ library(wesanderson)
 ##get metadata file
 #condaenv="C:\\Users\\gosl241\\OneDrive - PNNL\\Documents\\GitHub\\amlresistancenetworks\\renv\\python\\r-reticulate\\"
 
-pal = wesanderson::wes_palette('Darjeeling1')
+pal = c(wesanderson::wes_palette('Darjeeling1'),wesanderson::wes_palette('Darjeeling2'))
 
 #reticulate::use_condaenv(condaenv)
 syn=reticulate::import('synapseclient')
@@ -241,8 +241,19 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
   })
 
   names(dlist)<-samps
-  ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+  nann<-annotes%>%
+    mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
+    mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
+    mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
+    mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
+    mutate(extras=stringr::str_replace_all(extras,"^$","None"))%>%
+    select(extras)%>%
     tibble::rownames_to_column('altID')
+  
+  ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+    tibble::rownames_to_column('altID')%>%
+    left_join(nann)%>%
+    mutate(dataType=prefix)
 
   #write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
 
@@ -254,6 +265,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     ggtitle(pat)
   })
   
+
   #patCors<-lapply(samps,function(norm){
   #  print()
   #})
@@ -287,10 +299,11 @@ plotPatientCors<-function(mat,pannotes,nannotes,prefix='geneExpression'){
   corTab<-corTab%>%left_join(tibble::rownames_to_column(nannotes,'Sample'),by='Sample')%>%
     select(Sample,Patient,Correlation,`Biobank Patient`='individualID.x',Media,experimentalCondition)%>%
     distinct()%>%
-    mutate(Additives=stringr::str_replace_all(experimentalCondition,"None|,*DMEM|,*Mammo|,*StemPro",""))
+    mutate(Additives=stringr::str_replace_all(experimentalCondition,"None|,*DMEM|,*Mammo|,*StemPro",""))%>%
+    mutate(dataType=prefix)
   
   p<-ggplot(corTab,aes(x=`Biobank Patient`,y=Correlation,fill=Media))+geom_boxplot()+
     scale_fill_manual(values=pal)+facet_grid(~Additives)+coord_flip()
   ggsave(paste0(prefix,'patientCor.pdf'),p,width=10)
-  
+  return(corTab)
 }
