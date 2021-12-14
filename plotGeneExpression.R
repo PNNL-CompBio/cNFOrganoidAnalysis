@@ -16,25 +16,33 @@ sync$store(syn$File('pcaOfAllSamples.png',parentId='syn24827084'))
 
 
 patindiv<-annotes[pats,'individualID']
+specs<-rownames(annotes)
 
-###plot heatmap of correlations
-sannotes<-nannotes%>%as.data.frame(stringsAsFactors=FALSE)%>%
-  dplyr::mutate(cohort=ifelse(individualID%in%patindiv,'cNF','Organoid'))%>%
-  dplyr::select(Media,Cytokines,Forskoline,individualID,cohort)
 
-rownames(sannotes)<-rownames(nannotes)
+pannotes<-data.frame(individualID=c(annotes$individualID,stringr::str_replace(pats,'tumor[0-9]','')),
+             Media=c(annotes$Media,rep('Tumor',length(pats))),
+             Cytokines=as.character(c(annotes$Cytokines,rep(FALSE,length(pats)))),
+                           Forksoline=as.character(c(annotes$Forskoline,rep(FALSE,length(pats)))),
+            cohort=c(ifelse(annotes$Media=='Tumor','cNF','Organoid'),rep('Biobank',length(pats))))
 
-annote.colors<-lapply(names(sannotes),function(x) c(`FALSE`='white',`TRUE`='black'))
-names(annote.colors)<-names(sannotes)
-annote.colors$Media<-c(None='white',StemPro='black',Mammo='darkgrey',DMEM='lightgrey')
-annote.colors$cohort<-c(cNF='white',Organoid='black')
+#levels(pannotes$Media)<-levels(annotes$Media)
+rownames(pannotes)<-c(rownames(annotes),pats)
 
+
+annote.colors<-lapply(names(pannotes),function(x) c(`FALSE`='white',`TRUE`='darkgrey'))
+names(annote.colors)<-names(pannotes)
+annote.colors$Media<-media_pal
+annote.colors$cohort<-c(cNF='white',Organoid='darkgrey',Biobank='grey')
+annote.colors$individualID <- c(patient_pal,pal)[1:length(unique(pannotes$individualID))]
+names(annote.colors$individualID)<-unique(pannotes$individualID)
 
 pheatmap(cor(mat,method='spearman'),
-         annotation_col = sannotes%>%
-           dplyr::select(-individualID),
-         annotation_row=sannotes%>%
-           dplyr::select(-individualID),
+         annotation_col = pannotes,#%>%
+           #dplyr::select(-individualID),
+         annotation_row=pannotes,#%>%
+         clustering_distance_rows = 'correlation',
+         clustering_distance_cols='correlation',
+          # dplyr::select(-individualID),
           cellheight=10,cellwidth = 10, annotation_colors=annote.colors,
          filename=paste0('heatmapOfAllCorrelations.pdf'))
 sync$store(syn$File('heatmapOfAllCorrelations.pdf',parentId='syn24827084'))
@@ -45,7 +53,9 @@ mat2<-rnaseq%>%
   dplyr::select(specimenID,zScore,Symbol)%>%
   tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
                      values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
-  tibble::column_to_rownames('Symbol')%>%as.matrix()
+  as.data.frame()%>%
+  tibble::column_to_rownames('Symbol')%>%
+  as.matrix()
 
 
 shared<-intersect(colnames(mat),rownames(annotes))
@@ -59,31 +69,28 @@ badsamps<-subset(ddf,Similarity<0.6)$altID
 print(paste('We have',length(badsamps),'bad samples we are removing'))
 
 ##now let's plot correlation with CNFs
-nfsamps<-colnames(mat2)[grep('NF',colnames(mat2))]
-others<-setdiff(colnames(mat2),nfsamps)
-restab=do.call(rbind,lapply(nfsamps,function(x) cor(mat2[,x],mat2[,others],method='spearman')))
+nfsamps<-colnames(mat2)[grep('NF',colnames(mat))]
+others<-setdiff(colnames(mat),nfsamps)
+restab=do.call(rbind,lapply(nfsamps,function(x) cor(mat[,x],mat[,others],method='spearman')))
 rownames(restab)<-nfsamps
 
 cnfs<-annotes%>%
-  dplyr::select(individualID)%>%
+  dplyr::select(individualID,Media,extras)%>%
   as.data.frame()%>%
   tibble::rownames_to_column('cNF Sample')
 
-#p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column(Organoid')%>%
-#  tidyr::pivot_longer(others,names_to='cNF Sample',values_to='Similarity')%>%
-#  left_join(cnfs)%>%
-#  ggplot(aes(x=individualID,y=Similarity,fill=Organoid))+geom_boxplot()+scale_fill_manual(values=pal)
-#ggsave('cNFPatients.pdf',p2,width=10)
+p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
+  tidyr::pivot_longer(others,names_to='patient',values_to='Similarity')%>%
+  left_join(cnfs)%>%
+  mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
+  rowwise()%>%
+  mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
+  ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
+  scale_fill_manual(values=media_pal)+
+  facet_grid(~extras)+coord_flip()
 
-
-condlist<-c('DMEM','StemPro','Cytokines','Mammo','Forskoline')
-all.d<-lapply(condlist,function(x){
-  
-  res<-getDifferencesInCondition(mat,subset(biga,!specimenID%in%badsamps),x,'geneExpression',doPlot=FALSE)  
-  
-})
-names(all.d)<-condlist
-diffStats<-data.frame(all.d)%>%mutate(data='rnaSeq')
+ggsave('cNFPatients.pdf',p2,width=10)
+ggsave('cNFPatients.png',p2,width=10)
 
 
 

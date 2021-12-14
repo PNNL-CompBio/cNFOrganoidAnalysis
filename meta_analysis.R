@@ -13,10 +13,6 @@ tab <- sync$tableQuery("SELECT * FROM syn24216591")$asDataFrame()
 #join with metadata from file view
 file.metadata<-sync$tableQuery("SELECT name,specimenID,individualID FROM syn11601495 WHERE assay = 'bisulfiteSeq'")$asDataFrame()
 
-annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()
-
-pal = wesanderson::wes_palette('Darjeeling1')
-
 #now we have proper metadata
 res<-file.metadata%>%
   rowwise()%>%
@@ -24,12 +20,12 @@ res<-file.metadata%>%
   left_join(tab)
 
 
-nann<-annotes%>%
-  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
-  mutate(extras=stringr::str_replace_all(extras,"^$","None"))
+#nann<-annotes%>%
+#  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
+#  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
+#  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
+#  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
+#  mutate(extras=stringr::str_replace_all(extras,"^$","None"))
 
 ##now merge into a single table
 vars <- c('individualID','specimenID','Similarity','dataType',
@@ -50,7 +46,8 @@ rtab <- sync$tableQuery("SELECT * FROM syn24828132")$asDataFrame()%>%
   rename(specimenID='altID',individualID='Patient')%>%
   dplyr::select(specimenID,Similarity)%>%
   mutate(dataType='rnaSeq')%>%
-  left_join(nann,by='specimenID')%>%
+  mutate(specimenID=as.character(specimenID))%>%
+  left_join(tibble::rownames_to_column(annotes,'specimenID'),by='specimenID')%>%
   select(vars)
 
 
@@ -60,15 +57,17 @@ rtab <- sync$tableQuery("SELECT * FROM syn24828132")$asDataFrame()%>%
 itab <- sync$tableQuery("SELECT * from syn24988958")$asDataFrame()%>%
   rename(specimenID='altID',individualID='Patient')%>%
   dplyr::select(specimenID,Similarity)%>%
+  mutate(specimenID=as.character(specimenID))%>%
   mutate(dataType='IHC')%>%
-  left_join(nann,by='specimenID')%>%
+  left_join(tibble::rownames_to_column(annotes,'specimenID'),by='specimenID')%>%
   select(vars)
 
 
 ctab <- sync$tableQuery('SELECT * from syn25954974')$asDataFrame()%>%
   dplyr::select(specID,Similarity='corVal',specimenID)%>%
   mutate(dataType='flow cytometry')%>%
-  left_join(nann,by='specimenID')%>%
+  mutate(specimenID=as.character(specimenID))%>%
+  left_join(tibble::rownames_to_column(annotes,'specimenID'),by='specimenID')%>%
   select(vars)
 
 
@@ -104,7 +103,7 @@ p3<-full.tab%>%
   geom_jitter(aes(color=dataType,shape=individualID))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
 
-ggsave('altCorrelation2.pdf',p3)
+ggsave('altCorrelation2.pdf',p3,width=10)
 sync$store(syn$File('altCorrelation2.pdf',parentId='syn11376065'))
 
 ##table with mean. 
