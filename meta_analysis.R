@@ -20,12 +20,12 @@ res<-file.metadata%>%
   left_join(tab)
 
 
-#nann<-annotes%>%
-#  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
-#  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
-#  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
-#  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
-#  mutate(extras=stringr::str_replace_all(extras,"^$","None"))
+nann<-annotes%>%
+  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
+  mutate(extras=stringr::str_replace_all(extras,"^$","None"))
 
 ##now merge into a single table
 vars <- c('individualID','specimenID','Similarity','dataType',
@@ -38,7 +38,7 @@ methyl.cor<-res%>%
   mutate(dataType='RRBS')%>%
   mutate(specimenID=stringr::str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
   mutate(specimenID=stringr::str_replace_all(specimenID,'NF0008-1-M$','NF0008-1 M'))%>%
-  select(-linearR2)%>%left_join(nann)%>%
+  select(-linearR2)%>%left_join(tibble::rownames_to_column(annotes,'specimenID'))%>%
   select(vars)
 
 #get rnaseq cor
@@ -82,7 +82,7 @@ p<-full.tab%>%
   geom_jitter(aes(color=extras,shape=dataType))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
 
-ggsave('combinedCorrelation.pdf',p,width=6)
+ggsave('combinedCorrelation.pdf',p)
 sync$store(syn$File('combinedCorrelation.pdf',parentId='syn11376065'))
 
 ##now plot
@@ -92,7 +92,7 @@ p2<-full.tab%>%
   geom_jitter(aes(color=dataType,shape=extras))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
 
-ggsave('altCorrelation.pdf',p2,width=6)
+ggsave('altCorrelation.pdf',p2)
 sync$store(syn$File('altCorrelation.pdf',parentId='syn11376065'))
 
 
@@ -103,7 +103,7 @@ p3<-full.tab%>%
   geom_jitter(aes(color=dataType,shape=individualID))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
 
-ggsave('altCorrelation2.pdf',p3,width=10)
+ggsave('altCorrelation2.pdf',p3)
 sync$store(syn$File('altCorrelation2.pdf',parentId='syn11376065'))
 
 ##table with mean. 

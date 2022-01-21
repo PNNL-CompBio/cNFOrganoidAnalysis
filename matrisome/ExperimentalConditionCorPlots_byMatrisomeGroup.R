@@ -105,9 +105,9 @@ annote.colors<-lapply(names(sannotes),function(x) c(`FALSE`='white',`TRUE`='grey
 names(annote.colors)<-names(sannotes)
 annote.colors$Media<-media_pal[1:length(unique(sannotes$Media))]#c(None='white',StemPro='black',Mammo='darkgrey',DMEM='lightgrey')
 #nnote.colors$cohort<-c(cNF='white',Organoid='black')
-annote.colors$individualID=c(patient_pal,pal)[1:length(unique(sannotes$individualID))]
+annote.colors$individualID=patient_pal#c(patient_pal,pal)[1:length(unique(sannotes$individualID))]
 #                             NF0009='lightgrey',NF0007='darkslategrey')
-names(annote.colors$individualID)<-unique(sannotes$individualID)
+#names(annote.colors$individualID)<-unique(sannotes$individualID)
 
 
 modtab%>%

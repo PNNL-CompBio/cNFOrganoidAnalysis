@@ -81,8 +81,9 @@ annote.colors<-list(Media=media_pal,#c(Mammo='darkgrey',Tumor='white',StemPro='b
                     Cytokines=c(`FALSE`='white',`TRUE`='grey'),
                     Forskoline=c(`FALSE`='white',`TRUE`='grey'))
 #names(annote.colors)<-names(plot.annotes)
-annote.colors$individualID <- c(patient_pal,pal)[1:length(unique(pannotes$individualID))]
-names(annote.colors$individualID)<-unique(pannotes$individualID)
+annote.colors$individualID <- patient_pal
+#c(patient_pal,pal)[1:length(unique(pannotes$individualID))]
+#names(annote.colors$individualID)<-unique(pannotes$individualID)
 
 ##MCP Counter
 mat<-subset(full.tab,method=='mcp_counter')%>%

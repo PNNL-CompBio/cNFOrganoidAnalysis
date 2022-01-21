@@ -10,6 +10,7 @@ library(umap)
 ### Plot PCA of expression data
 p1<-autoplot(prcomp(t(mat)),data=nannotes[colnames(mat),],shape='Media',colour='individualID')
 #p2<-umap(t(mat), data=nannotes[colnames(mat),])
+
 ggsave('pcaOfAllSamples.png',p1)
 
 sync$store(syn$File('pcaOfAllSamples.png',parentId='syn24827084'))
@@ -19,27 +20,27 @@ patindiv<-annotes[pats,'individualID']
 specs<-rownames(annotes)
 
 
-pannotes<-data.frame(individualID=c(annotes$individualID,stringr::str_replace(pats,'tumor[0-9]','')),
+npannotes<-data.frame(individualID=c(annotes$individualID,gsub('tumor[0-9]*','',pats)),
              Media=c(annotes$Media,rep('Tumor',length(pats))),
              Cytokines=as.character(c(annotes$Cytokines,rep(FALSE,length(pats)))),
                            Forksoline=as.character(c(annotes$Forskoline,rep(FALSE,length(pats)))),
             cohort=c(ifelse(annotes$Media=='Tumor','cNF','Organoid'),rep('Biobank',length(pats))))
 
-#levels(pannotes$Media)<-levels(annotes$Media)
-rownames(pannotes)<-c(rownames(annotes),pats)
+levels(npannotes$Media)<-levels(annotes$Media)
+rownames(npannotes)<-c(rownames(annotes),pats)
 
 
-annote.colors<-lapply(names(pannotes),function(x) c(`FALSE`='white',`TRUE`='darkgrey'))
-names(annote.colors)<-names(pannotes)
+annote.colors<-lapply(names(npannotes),function(x) c(`FALSE`='white',`TRUE`='darkgrey'))
+names(annote.colors)<-names(npannotes)
 annote.colors$Media<-media_pal
 annote.colors$cohort<-c(cNF='white',Organoid='darkgrey',Biobank='grey')
-annote.colors$individualID <- c(patient_pal,pal)[1:length(unique(pannotes$individualID))]
-names(annote.colors$individualID)<-unique(pannotes$individualID)
+annote.colors$individualID <- patient_pal
+#names(annote.colors$individualID)<-unique(pannotes$individualID)
 
 pheatmap(cor(mat,method='spearman'),
-         annotation_col = pannotes,#%>%
+         annotation_col = npannotes,#%>%
            #dplyr::select(-individualID),
-         annotation_row=pannotes,#%>%
+         annotation_row=npannotes,#%>%
          clustering_distance_rows = 'correlation',
          clustering_distance_cols='correlation',
           # dplyr::select(-individualID),

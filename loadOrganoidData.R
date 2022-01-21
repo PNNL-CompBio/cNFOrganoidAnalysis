@@ -78,11 +78,17 @@ annotes<-annotes%>%
 pal = c(wesanderson::wes_palette("Chevalier1"),
         wesanderson::wes_palette("Cavalcanti1"),
         wesanderson::wes_palette("Zissou1"))
-media_pal = wesanderson::wes_palette('Darjeeling1')
-patient_pal = wesanderson::wes_palette("Darjeeling2")
 
+media_pal = wesanderson::wes_palette('Darjeeling1')[1:4]
 names(media_pal)<-c(unique(annotes$Media))
-names(patient_pal)<-unique(annotes$individualID)
+
+org_pal = c("#212155","#2B3A8D","#3375B7","#6EC6EA","#CDE8F4")
+names(org_pal)<-c("NF0009","NF0012","NF0002","NF0007","NF0008")
+ctf_pal <- c("#27194D","#453286","#5D509D","#7165A9","#938ABE","#BFB7D9","#D1B4D3",
+             "#BF8CBA","#AE5E9F","#873180","#572455")
+names(ctf_pal)<-c("patient10","patient11","patient13","patient1","patient2","patient3","patient4","patient5","patient6","patient8","patient9")
+patient_pal <- c(org_pal,ctf_pal)
+#names(patient_pal)<-unique(annotes$individualID)
 
 ##get RNAseq data
 rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
@@ -233,11 +239,11 @@ limmaTwoFactorDEAnalysis <- function(dat, sampleIDs.group1, sampleIDs.group2) {
 
 
 
-plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
+plotCorrelationBetweenSamps<-function(mat,sannotes,prefix='geneExpression'){
 
-  patids<-grep('patient',annotes$individualID)
+  patids<-grep('patient',sannotes$individualID)
   
-  samps<-annotes%>%
+  samps<-sannotes%>%
     subset(!individualID%in%patids)%>%
     subset(Media=='Tumor')%>%rownames()
   
@@ -247,14 +253,14 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     print(norm)
     iid<-annotes[norm,'individualID']
   
-    others<-setdiff(rownames(subset(annotes,individualID==iid)),norm)
-    others <- intersect(rownames(annotes)[grep(norm,rownames(annotes))],colnames(mat))
+    others<-setdiff(rownames(subset(sannotes,individualID==iid)),norm)
+    others <- intersect(rownames(sannotes)[grep(norm,rownames(sannotes))],colnames(mat))
     print(others)
     norcors<-sapply(setdiff(others,norm),function(x) {
     #  print(x)
       cor(mat[,norm],mat[,x],method='spearman',use='pairwise.complete.obs')})
     #print(norcors)
-    pdat<-annotes[setdiff(others,norm),]%>%subset(experimentalCondition!="None")%>%
+    pdat<-sannotes[setdiff(others,norm),]%>%subset(experimentalCondition!="None")%>%
       dplyr::select(Media,Cytokines,Forskoline)%>%
       cbind(Similarity=norcors)%>%
       replace_na(list(Similarity=0.0))
@@ -263,7 +269,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
   })
 
   names(dlist)<-samps
-  nann<-annotes%>%
+  nann<-sannotes%>%
     dplyr::select(extras)%>%
     as.data.frame()%>%
     tibble::rownames_to_column('altID')
@@ -299,7 +305,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
 }
 
 plotPatientCors<-function(mat,pannotes,nannotes,prefix='geneExpression'){
-  patids<-grep('patient',annotes$individualID)
+  patids<-grep('patient',pannotes$individualID)
   
   corTab<-cor(mat,method='spearman')%>%
     as.data.frame()%>%tibble::rownames_to_column('Sample')%>%
