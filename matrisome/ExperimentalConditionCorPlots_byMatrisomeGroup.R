@@ -95,9 +95,11 @@ patindiv<-nannotes[pats,'individualID']
 ###plot heatmap of correlations
 sannotes<-nannotes%>%as.data.frame(stringsAsFactors=FALSE)%>%
   dplyr::mutate(cohort=ifelse(individualID%in%patindiv,'cNF','Organoid'))%>%
-  dplyr::select(Media,Cytokines,Forskoline,individualID,cohort)%>%
+  dplyr::select(Media,Cytokines,Forskoline,individualID)%>%
   mutate(Cytokines=as.character(Cytokines))%>%
-  mutate(Forskoline =as.character(Forskoline))
+  mutate(Forskoline =as.character(Forskoline))%>%
+  mutate(Media=stringr::str_replace_all(Media,'None','Tumor'))%>%
+  mutate(Media=as.factor(Media))
 
 rownames(sannotes)<-rownames(nannotes)
 
