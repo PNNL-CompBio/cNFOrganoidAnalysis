@@ -79,7 +79,7 @@ full.tab<-rbind(methyl.cor,rtab,itab,ctab)%>%
 p<-full.tab%>%
   ggplot(aes(x=extras,y=Similarity))+
   geom_boxplot(aes(alpha=0.8,fill=extras),outlier.shape=NA)+
-  geom_jitter(aes(color=extras,shape=dataType))+
+  #geom_jitter(aes(color=extras,shape=dataType))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
 
 ggsave('combinedCorrelation.pdf',p)
@@ -89,7 +89,7 @@ sync$store(syn$File('combinedCorrelation.pdf',parentId='syn11376065'))
 p2<-full.tab%>%
   ggplot(aes(x=dataType,y=Similarity))+
   geom_boxplot(aes(alpha=0.8,fill=dataType),outlier.shape=NA)+
-  geom_jitter(aes(color=dataType,shape=extras))+
+  #geom_jitter(aes(color=dataType,shape=extras))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
 
 ggsave('altCorrelation.pdf',p2)
@@ -99,8 +99,8 @@ sync$store(syn$File('altCorrelation.pdf',parentId='syn11376065'))
 ##now plot
 p3<-full.tab%>%
   ggplot(aes(x=dataType,y=Similarity))+
-  geom_boxplot(aes(alpha=0.8,fill=dataType),outlier.shape=NA)+
-  geom_jitter(aes(color=dataType,shape=individualID))+
+  geom_boxplot(aes(fill=dataType),outlier.shape=NA)+
+ #geom_jitter(aes(shape=individualID,col=dataType,alpha=0.1))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
 
 ggsave('altCorrelation2.pdf',p3)
