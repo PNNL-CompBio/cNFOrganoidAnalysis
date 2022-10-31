@@ -42,7 +42,7 @@ methyl.cor<-res%>%
   select(vars)
 
 #get rnaseq cor
-rtab <- sync$tableQuery("SELECT * FROM syn24828132")$asDataFrame()%>%
+rtab <- sync$tableQuery("SELECT * FROM syn27572445")$asDataFrame()%>%
   rename(specimenID='altID',individualID='Patient')%>%
   dplyr::select(specimenID,Similarity)%>%
   mutate(dataType='rnaSeq')%>%
@@ -71,18 +71,31 @@ ctab <- sync$tableQuery('SELECT * from syn25954974')$asDataFrame()%>%
   select(vars)
 
 
-full.tab<-rbind(methyl.cor,rtab,itab,ctab)%>%
+full.tab<-rbind(methyl.cor,rtab,ctab)%>%
   drop_na()%>%
   mutate(Media=as.factor(Media))
+
+full.tab%>%group_by(Media,dataType)%>%summarize(medSim=median(Similarity))
+
+##statis for individual datasets
+full.tab%>%lm(Similarity ~ Media, data=.)%>%summary()
 
 ##now plot
 p<-full.tab%>%
   ggplot(aes(x=extras,y=Similarity))+
-  geom_boxplot(aes(alpha=0.8,fill=extras),outlier.shape=NA)+
-  #geom_jitter(aes(color=extras,shape=dataType))+
-  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
+  geom_boxplot(aes(alpha=0.8),outlier.shape=NA)+
+  geom_jitter(aes(color=dataType,shape=dataType),size=3)+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)
+  
 
-ggsave('combinedCorrelation.pdf',p)
+
+pp<-full.tab%>%
+  ggplot(aes(x=Media,y=Similarity))+
+  geom_boxplot(aes(alpha=0.8,fill=Media),outlier.shape=NA)+
+  geom_jitter(aes(color=Media,shape=dataType))+
+  scale_fill_manual(values=media_pal)+scale_color_manual(values=media_pal)+facet_grid(extras~.)+coord_flip()
+
+ggsave('combinedCorrelation.pdf',p,width=8)
 sync$store(syn$File('combinedCorrelation.pdf',parentId='syn11376065'))
 
 ##now plot
@@ -90,9 +103,11 @@ p2<-full.tab%>%
   ggplot(aes(x=dataType,y=Similarity))+
   geom_boxplot(aes(alpha=0.8,fill=dataType),outlier.shape=NA)+
   #geom_jitter(aes(color=dataType,shape=extras))+
-  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)
 
-ggsave('altCorrelation.pdf',p2)
+
+
+ggsave('altCorrelation.pdf',p2,height=6)
 sync$store(syn$File('altCorrelation.pdf',parentId='syn11376065'))
 
 
@@ -103,8 +118,19 @@ p3<-full.tab%>%
  #geom_jitter(aes(shape=individualID,col=dataType,alpha=0.1))+
   scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
 
-ggsave('altCorrelation2.pdf',p3)
+ggsave('altCorrelation2.pdf',p3,height=6)
 sync$store(syn$File('altCorrelation2.pdf',parentId='syn11376065'))
+
+##now plot
+p3<-full.tab%>%
+  subset(individualID!='NF0002')%>%
+  ggplot(aes(x=dataType,y=Similarity))+
+  geom_boxplot(aes(fill=dataType),outlier.shape=NA)+
+  #geom_jitter(aes(shape=individualID,col=dataType,alpha=0.1))+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~extras)+coord_flip()
+
+ggsave('altCorrelation2_no0002.pdf',p3)
+sync$store(syn$File('altCorrelation2_no0002.pdf',parentId='syn11376065'))
 
 ##table with mean. 
 full.tab%>%group_by(Media,extras)%>%summarize(meanSim=mean(Similarity),medSim=median(Similarity))%>%arrange(desc(meanSim))

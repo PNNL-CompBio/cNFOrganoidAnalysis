@@ -85,7 +85,10 @@ p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
   mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
   mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
-                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))%>%
+                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))
+p2%>%group_by(Media)%>%summarize(medSim=median(Similarity))
+
+p3<-p2%>%
   rowwise()%>%
   mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
   ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
@@ -93,7 +96,26 @@ p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   facet_grid(~extras)+coord_flip()
 
 ggsave('cNFPatients.pdf',p2,width=10)
-ggsave('cNFPatients.png',p2,width=10)
+
+pat2=grep('NF0002',rownames(restab))
+p2<-restab[-pat2,]%>%
+  as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
+  tidyr::pivot_longer(others,names_to='patient',values_to='Similarity')%>%
+  left_join(cnfs)%>%
+  mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
+  mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
+  mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
+                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))%>%
+  rowwise()%>%
+  mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
+  ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
+  scale_fill_manual(values=media_pal)+
+  facet_grid(~extras)+coord_flip()
+
+ggsave('cNFPatients_no0002.pdf',p2,width=10)
+
+
+#ggsave('cNFPatients.png',p2,width=10)
 
 
 
