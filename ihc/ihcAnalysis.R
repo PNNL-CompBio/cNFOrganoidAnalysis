@@ -31,6 +31,19 @@ iannotes<-ihc%>%
 
 res<-plotCorrelationBetweenSamps(t(imat),iannotes[rownames(imat),],prefix='IHC')
 
+
+##now plot
+p<-res%>%
+  ggplot(aes(x=extras,y=Similarity))+
+  geom_boxplot(aes(alpha=0.8,fill=extras),outlier.shape=NA)+
+  geom_jitter(aes(color=extras,shape=Patient))+
+  scale_fill_manual(values=pal)+scale_color_manual(values=pal)+facet_grid(Media~.)+coord_flip()+ggtitle('IHC sample correlation')
+
+ggsave('combinedIHCCorrelation.pdf',p,width=8)
+sync$store(syn$File('combinedIHCCorrelation.pdf',parentId='syn11376065'))
+
+
+
 ##TODO: store table on Synapse
 write.table(res,file='tmp.csv',sep=',',row.names=F)
 cors<-sync$tableQuery('SELECT * FROM syn24988958')

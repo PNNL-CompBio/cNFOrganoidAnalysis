@@ -11,7 +11,6 @@ library(wesanderson)
 ##get metadata file
 #condaenv="C:\\Users\\gosl241\\OneDrive - PNNL\\Documents\\GitHub\\amlresistancenetworks\\renv\\python\\r-reticulate\\"
 
-pal = wesanderson::wes_palette('Darjeeling1')
 
 #reticulate::use_condaenv(condaenv)
 syn=reticulate::import('synapseclient')
@@ -32,24 +31,14 @@ rnaseq<-rbind(tabres$asDataFrame(), tabres2$asDataFrame())%>%
 badSpecs=c("NF0009-1 M","NF0009-1-M+C","NF0002-8-19-M+C+F","NF0002-8-19-D+C",
            "NF0002-8-19-D+C+F","NF0002-8-19-S+C")
 
+
+##get annotations first
 annotes<-sync$tableQuery("select * from syn24216672")$asDataFrame()
 
-rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
-
-pannotes<-rnaseq%>%select(specimenID,individualID,experimentalCondition)%>%
-  distinct()%>%
-  tibble::remove_rownames()%>%
-  tibble::column_to_rownames('specimenID')
-
-pats=rownames(pannotes)[grep('patient',rownames(pannotes))]
-
-nannotes<-apply(annotes,2,as.character)%>%
-  as.data.frame()%>%
-  tibble::remove_rownames()%>%
-  tibble::column_to_rownames('specimenID')
-
+##keep track of organoid
 orgs<-subset(annotes,experimentalCondition!='NaN')%>%select(specimenID)
 
+#now create various annotations
 biga<-annotes%>% 
   subset(specimenID%in%orgs$specimenID)%>%
   dplyr::select(-c(individualID,experimentalCondition))%>%
@@ -58,15 +47,57 @@ biga<-annotes%>%
   mutate(across(-c(Cytokines,Forskoline,specimenID), ~replace_na(.x, 0))) %>%
   mutate(across(-c(Cytokines,Forskoline,specimenID), ~ifelse(.x==1, TRUE,FALSE)))
 
+pannotes<-rnaseq%>%select(specimenID,individualID,experimentalCondition)%>%
+  distinct()%>%
+  tibble::remove_rownames()%>%
+  tibble::column_to_rownames('specimenID')
+
+nannotes<-apply(annotes,2,as.character)%>%
+  as.data.frame()%>%
+  tibble::remove_rownames()%>%
+  tibble::column_to_rownames('specimenID')
 
 
-### get drug data
+### get drug data befmore we update the annotations
 drugData = sync$tableQuery('SELECT * FROM syn26145552')$asDataFrame()%>%
   left_join(annotes,by='specimenID')
 
+
+##then relabel things for future plotting
 annotes<-annotes%>%
   tibble::remove_rownames()%>%
-  tibble::column_to_rownames('specimenID')
+  tibble::column_to_rownames('specimenID')%>%
+  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
+  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
+  mutate(extras=stringr::str_replace_all(extras,"^$","None"))%>%
+  mutate(Media=stringr::str_replace_all(Media,'None','Tumor'))
+
+##sort through color schemes to keep consistent throughout
+pal = c(wesanderson::wes_palette("Chevalier1"),
+        wesanderson::wes_palette("Cavalcanti1"),
+        wesanderson::wes_palette("Zissou1"))
+
+media_pal = wesanderson::wes_palette('Darjeeling1')[1:4]
+names(media_pal)<-c(unique(annotes$Media))
+
+org_pal = c("#212155","#2B3A8D","#3375B7","#6EC6EA","#CDE8F4")
+names(org_pal)<-c("NF0009","NF0012","NF0002","NF0007","NF0008")
+
+ctf_pal <- c("#27194D","#453286","#5D509D","#7165A9","#938ABE","#BFB7D9","#D1B4D3",
+             "#BF8CBA","#AE5E9F","#873180","#572455")
+
+names(ctf_pal)<-c("patient10","patient11","patient13","patient1","patient2","patient3","patient4","patient5","patient6","patient8","patient9")
+patient_pal <- c(org_pal,ctf_pal)
+#names(patient_pal)<-unique(annotes$individualID)
+
+##get RNAseq data
+rnaseq<-rnaseq%>%subset(!specimenID%in%badSpecs)
+
+#
+pats=rownames(pannotes)[grep('patient',rownames(pannotes))]
+
 
 mat<-rnaseq%>%
   dplyr::select(specimenID,zScore,Symbol)%>%
@@ -74,10 +105,9 @@ mat<-rnaseq%>%
                      values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
   tibble::column_to_rownames('Symbol')%>%as.matrix()
 
-vars<-apply(mat,1,var,na.rm=T)%>%sort(decreasing=T)
+vars<-apply(mat,1,var,na.rm=T)%>%
+  sort(decreasing=T)
   
-
-
 
 #' getDifferencesInCOndition
 #' Filters for a particular condition and data type
@@ -211,13 +241,13 @@ limmaTwoFactorDEAnalysis <- function(dat, sampleIDs.group1, sampleIDs.group2) {
 
 
 
-plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
+plotCorrelationBetweenSamps<-function(mat,sannotes,prefix='geneExpression'){
 
-  patids<-grep('patient',annotes$individualID)
+  patids<-grep('patient',sannotes$individualID)
   
-  samps<-annotes%>%
+  samps<-sannotes%>%
     subset(!individualID%in%patids)%>%
-    subset(Media=='None')%>%rownames()
+    subset(Media=='Tumor')%>%rownames()
   
   print(samps)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
   ##now compute the correlation values
@@ -225,14 +255,14 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     print(norm)
     iid<-annotes[norm,'individualID']
   
-    others<-setdiff(rownames(subset(annotes,individualID==iid)),norm)
-    others <- intersect(rownames(annotes)[grep(norm,rownames(annotes))],colnames(mat))
+    others<-setdiff(rownames(subset(sannotes,individualID==iid)),norm)
+    others <- intersect(rownames(sannotes)[grep(norm,rownames(sannotes))],colnames(mat))
     print(others)
     norcors<-sapply(setdiff(others,norm),function(x) {
     #  print(x)
       cor(mat[,norm],mat[,x],method='spearman',use='pairwise.complete.obs')})
     #print(norcors)
-    pdat<-annotes[setdiff(others,norm),]%>%subset(experimentalCondition!="None")%>%
+    pdat<-sannotes[setdiff(others,norm),]%>%subset(experimentalCondition!="None")%>%
       dplyr::select(Media,Cytokines,Forskoline)%>%
       cbind(Similarity=norcors)%>%
       replace_na(list(Similarity=0.0))
@@ -241,8 +271,16 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
   })
 
   names(dlist)<-samps
-  ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+  nann<-sannotes%>%
+    dplyr::select(extras)%>%
+    as.data.frame()%>%
     tibble::rownames_to_column('altID')
+  
+  ddf<-do.call(rbind,lapply(names(dlist),function(x) data.frame(Patient=x,dlist[[x]])))%>%
+    as.data.frame()%>%
+    tibble::rownames_to_column('altID')%>%
+    left_join(nann)%>%
+    mutate(dataType=prefix)
 
   #write.csv(ddf,paste0(prefix,'orgCorrelations.csv'),row.names=F)
 
@@ -254,6 +292,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
     ggtitle(pat)
   })
   
+
   #patCors<-lapply(samps,function(norm){
   #  print()
   #})
@@ -268,7 +307,7 @@ plotCorrelationBetweenSamps<-function(mat,annotes,prefix='geneExpression'){
 }
 
 plotPatientCors<-function(mat,pannotes,nannotes,prefix='geneExpression'){
-  patids<-grep('patient',annotes$individualID)
+  patids<-grep('patient',pannotes$individualID)
   
   corTab<-cor(mat,method='spearman')%>%
     as.data.frame()%>%tibble::rownames_to_column('Sample')%>%
@@ -287,10 +326,11 @@ plotPatientCors<-function(mat,pannotes,nannotes,prefix='geneExpression'){
   corTab<-corTab%>%left_join(tibble::rownames_to_column(nannotes,'Sample'),by='Sample')%>%
     select(Sample,Patient,Correlation,`Biobank Patient`='individualID.x',Media,experimentalCondition)%>%
     distinct()%>%
-    mutate(Additives=stringr::str_replace_all(experimentalCondition,"None|,*DMEM|,*Mammo|,*StemPro",""))
+    mutate(Additives=stringr::str_replace_all(experimentalCondition,"None|,*DMEM|,*Mammo|,*StemPro",""))%>%
+    mutate(dataType=prefix)
   
   p<-ggplot(corTab,aes(x=`Biobank Patient`,y=Correlation,fill=Media))+geom_boxplot()+
     scale_fill_manual(values=pal)+facet_grid(~Additives)+coord_flip()
   ggsave(paste0(prefix,'patientCor.pdf'),p,width=10)
-  
+  return(corTab)
 }
