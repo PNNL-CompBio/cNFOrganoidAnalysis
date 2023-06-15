@@ -21,4 +21,7 @@ Figures 4 and 5 of the manuscript were generated from the sequencing data, and t
 |[./fig4cd_tumorDeconv.R](fig4cd_tumorDeconv.R)| THis contains plotting functions|
 |[./fig5_meta_analysis.R](fig5_meta_analysis.R)||
 
+## Samples
+We combine samples from the CTF Biobank as well as our own, depicted below.
+[!pcaOfAllSamples.png]
 
