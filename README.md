@@ -23,5 +23,5 @@ Figures 4 and 5 of the manuscript were generated from the sequencing data, and t
 
 ## Samples
 We combine samples from the CTF Biobank as well as our own, depicted below.
-[!samples](./pcaOfAllSamples.png)
+![samples](./pcaOfAllSamples.png)
 
