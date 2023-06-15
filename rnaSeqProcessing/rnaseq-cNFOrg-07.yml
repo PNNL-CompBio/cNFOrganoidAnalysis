@@ -1,11 +1,11 @@
 synapse_config:
   class: File
-  path: "/home/sgosline/.synapseConfig"
+  path: "/Users/gosl241/.synapseConfig"
 indexid: syn18134565
 index-type: gencode
 index-dir: gencode_v29
-idquery: SELECT specimenID,readPair,id FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq' and specimenID like 'NF0007-4%' order by specimenID
-sample_query: SELECT distinct specimenID,individualID,diagnosis,tumorType,resourceType,experimentalCondition,studyName,consortium,fundingAgency,dataType,assay,study, species,nf1Genotype,nf2Genotype,isCellLine FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq' and specimenID like 'NF0007-4%'
+idquery: SELECT specimenID,readPair,id FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq' and specimenID like 'NF0007-%' order by specimenID
+sample_query: SELECT distinct specimenID,individualID,diagnosis,tumorType,resourceType,experimentalCondition,studyName,consortium,fundingAgency,dataType,assay,study, species,nf1Genotype,nf2Genotype,isCellLine FROM syn11601495 WHERE ( ( "fileFormat" = 'fastq' ) ) and  assay = 'rnaSeq' and specimenID like 'NF0007-%'
 parentid: syn22802777
 group_by: specimenID
 tableparentid:
