@@ -5,7 +5,7 @@ source('loadOrganoidData.R')
 
 library(ggfortify)
 library(umap)
-
+library(cowplot)
 
 ### Plot PCA of expression data
 p1<-autoplot(prcomp(t(mat)),data=nannotes[colnames(mat),],shape='Media',colour='individualID')
@@ -13,7 +13,7 @@ p1<-autoplot(prcomp(t(mat)),data=nannotes[colnames(mat),],shape='Media',colour='
 
 ggsave('pcaOfAllSamples.png',p1)
 
-sync$store(syn$File('pcaOfAllSamples.png',parentId='syn24827084'))
+#sync$store(syn$File('pcaOfAllSamples.png',parentId='syn24827084'))
 
 
 patindiv<-annotes[pats,'individualID']
@@ -45,7 +45,7 @@ pheatmap(cor(mat,method='spearman'),
           # dplyr::select(-individualID),
           cellheight=10,cellwidth = 10, annotation_colors=annote.colors,
          filename=paste0('heatmapOfAllCorrelations.pdf'))
-sync$store(syn$File('heatmapOfAllCorrelations.pdf',parentId='syn24827084'))
+#sync$store(syn$File('heatmapOfAllCorrelations.pdf',parentId='syn24827084'))
 
 
 mat2<-rnaseq%>%
@@ -61,9 +61,9 @@ mat2<-rnaseq%>%
 shared<-intersect(colnames(mat),rownames(annotes))
 ddf<-plotCorrelationBetweenSamps(mat[,shared],annotes[shared,],'geneExpression')
 
-sync$store(syn$File('geneExpressioncorPlots.pdf',parentId='syn24827084'))
+#sync$store(syn$File('geneExpressioncorPlots.pdf',parentId='syn24827084'))
 write.table(ddf,file='tmp.csv',sep=',',row.names=F)
-sync$store(syn$build_table('RNAseq-based sample correlations','syn11374354','tmp.csv'))
+#sync$store(syn$build_table('RNAseq-based sample correlations','syn11374354','tmp.csv'))
 
 badsamps<-subset(ddf,Similarity<0.6)$altID
 print(paste('We have',length(badsamps),'bad samples we are removing'))
@@ -98,6 +98,7 @@ p3<-p2%>%
 ggsave('cNFPatients.pdf',p2,width=10)
 
 pat2=grep('NF0002',rownames(restab))
+
 p2<-restab[-pat2,]%>%
   as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   tidyr::pivot_longer(others,names_to='patient',values_to='Similarity')%>%
@@ -116,6 +117,38 @@ ggsave('cNFPatients_no0002.pdf',p2,width=10)
 
 
 #ggsave('cNFPatients.png',p2,width=10)
+##let's plot NF1 only?
 
+nf1_counts<-rnaseq|>
+  subset(Symbol=='NF1')|>
+  left_join(annotes)|>
+  subset(!is.na(experimentalCondition))|>
+  ggplot(aes(x=individualID,fill=Media,shape=Cytokines,y=totalCounts))+
+  geom_bar(stat='identity',position='dodge')+
+  scale_fill_manual(values=media_pal)+
+  facet_grid(Cytokines~.)
 
+nf1_z<-rnaseq|>
+  subset(Symbol=='NF1')|>
+  left_join(annotes)|>
+  subset(!is.na(experimentalCondition))|>
+  ggplot(aes(x=individualID,fill=Media,shape=Cytokines,y=zScore))+
+  geom_bar(stat='identity',position='dodge')+
+  scale_fill_manual(values=media_pal)+
+  facet_grid(Cytokines~.)
+
+fp<-cowplot::plot_grid(nf1_counts,nf1_z)
+ggsave('rnaseqcounts.pdf',fp)
+
+pc<-tabres|>
+  subset(experimentalCondition=='None')|>
+  unique()|>
+  left_join(annotes)|>
+  mutate(isNF=(ifelse(Symbol=="NF1",TRUE,FALSE)))|>
+  ggplot(aes(x=Symbol,y=totalCounts+0.1,col=isNF),xlabels=rep("",length(unique(rnaseq$Symbol))))+
+  geom_point()+
+  scale_y_log10()+
+ # geom_bar(position='dodge',stat='identity')+
+  facet_grid(specimenID~.)
+  
 

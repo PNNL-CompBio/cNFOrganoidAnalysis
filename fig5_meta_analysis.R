@@ -3,7 +3,9 @@
 #' to determine the similarity of the various growth metrics
 #' 
 
-source("loadOrganoidData.R")
+##this file compares the correlation of samples to the primary across IHC, methylation, and rnaseq
+#source("loadOrganoidData.R")
+source("loadExpFromCounts.R")
 library(dplyr)
 library(ggplot2)
 
@@ -20,14 +22,6 @@ res<-file.metadata%>%
   left_join(tab)
 
 
-nann<-annotes%>%
-  mutate(extras=stringr::str_replace_all(experimentalCondition,"Mammo,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,"DMEM,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,"StemPro,*",""))%>%
-  mutate(extras=stringr::str_replace_all(extras,',$',''))%>%
-  mutate(extras=stringr::str_replace_all(extras,"^$","None"))
-
-##now merge into a single table
 vars <- c('individualID','specimenID','Similarity','dataType',
           'Media','extras')
 
@@ -53,15 +47,15 @@ rtab <- sync$tableQuery("SELECT * FROM syn27572445")$asDataFrame()%>%
 
 
 #get ihc cor
-#TODO
-itab <- sync$tableQuery("SELECT * from syn24988958")$asDataFrame()%>%
-  rename(specimenID='altID',individualID='Patient')%>%
-  dplyr::select(specimenID,Similarity)%>%
-  mutate(specimenID=as.character(specimenID))%>%
-  mutate(dataType='IHC')%>%
-  left_join(tibble::rownames_to_column(annotes,'specimenID'),by='specimenID')%>%
-  select(vars)
-
+# #TODO
+# itab <- sync$tableQuery("SELECT * from syn24988958")$asDataFrame()%>%
+#   rename(specimenID='altID',individualID='Patient')%>%
+#   dplyr::select(specimenID,Similarity)%>%
+#   mutate(specimenID=as.character(specimenID))%>%
+#   mutate(dataType='IHC')%>%
+#   left_join(tibble::rownames_to_column(annotes,'specimenID'),by='specimenID')%>%
+#   select(vars)
+# 
 
 ctab <- sync$tableQuery('SELECT * from syn25954974')$asDataFrame()%>%
   dplyr::select(specID,Similarity='corVal',specimenID)%>%
