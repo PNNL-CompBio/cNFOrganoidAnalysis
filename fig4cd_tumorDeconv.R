@@ -4,7 +4,6 @@
 library(immunedeconv)  
 library(dplyr)
 library(tidyr)
-library(GS)
 library(pheatmap)
 source("orgPlottingFunctions.R")
 source("loadExpFromCounts.R")
@@ -56,8 +55,6 @@ cs<-runImmuneDeconv(rnaseq,'epic')
 full.tab<-rbind(xc,mc,cs)
 
 write.table(full.tab,'deconvfile.tsv',sep='\t',quote=FALSE,row.names=F)
-#tab<-syn$build_table('cNF Organoid Deconvolution','syn11374354','file.tsv')
-#sync$store(tab)
 
 
 ##MCP Counter

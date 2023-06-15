@@ -18,10 +18,10 @@ Figures 4 and 5 of the manuscript were generated from the sequencing data, and t
 |File| Description|
 |---|---|
 |[./fig4ab_plotGeneExpression.R](fig4ab_plotGeneExpression.R)|Plots panels A and B of figure 4|
-|[./fig4cd_tumorDeconv.R](fig4cd_tumorDeconv.R)| THis contains plotting functions|
-|[./fig5_meta_analysis.R](fig5_meta_analysis.R)||
+|[./fig4cd_tumorDeconv.R](fig4cd_tumorDeconv.R)| Tjis contains plotting functions|
+|[./fig5_meta_analysis.R](fig5_meta_analysis.R)| This is the analysis comparing correlations across data modalities.|
 
 ## Samples
 We combine samples from the CTF Biobank as well as our own, depicted below.
-[!pcaOfAllSamples.png]
+[!samples](./pcaOfAllSamples.png)
 
