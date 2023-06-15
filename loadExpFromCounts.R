@@ -57,13 +57,13 @@ getCountsFromMetadata<-function(manifest,sync,mapping,genes){
   
   ##now we can sum reads and z score
   sum.tab<-red.tab|>
-    group_by(specimenID,individualID,hgnc_symbol)|>
+    dplyr::group_by(specimenID,individualID,hgnc_symbol)|>
     dplyr::mutate(totalCounts=sum(NumReads))|>
     dplyr::select(-c(Length,EffectiveLength,ensembl_transcript_id_version,TPM,NumReads))|>
     dplyr::distinct()
   
   sum.tab<-sum.tab|>
-    group_by(specimenID,individualID)|>
+    dplyr::group_by(specimenID,individualID)|>
     dplyr::mutate(zScore=(totalCounts-mean(totalCounts+0.001,na.rm=T))/sd(totalCounts,na.rm=T))|>
     dplyr::rename(Symbol='hgnc_symbol')
   
@@ -73,7 +73,7 @@ getCountsFromMetadata<-function(manifest,sync,mapping,genes){
 orgtab<-getCountsFromMetadata(org_manifest,sync,mapping,genes)
 
 pattab<-getCountsFromMetadata(pat_manifest,sync,mapping,genes)|>
-  ungroup()|>
+  dplyr::ungroup()|>
   dplyr::select(-specimenID)|>
   dplyr::rename(specimenID='individualID')|>
   dplyr::mutate(individualID=stringr::str_replace(specimenID,'tumor[0-9]*',''))|>
@@ -92,7 +92,7 @@ rnaseq<-rbind(orgtab, pattab)%>%
   dplyr::mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S$','NF0007-4 S'))%>%
   dplyr::mutate(specimenID=str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
   dplyr::mutate(experimentalCondition=str_replace_all(experimentalCondition,'Cytkines,Mammo','Cytokines,Mammo'))|>
-  ungroup()
+  dplyr::ungroup()
 
 rnaseq$Media<-sapply(rnaseq$experimentalCondition,function(x){
   ifelse(length(grep('Mammo',x))>0,'Mammo',
@@ -131,8 +131,6 @@ names(annote.colors)<-names(bannotes)
 annote.colors$Media<-media_pal
 #annote.colors$cohort<-c(cNF='white',Organoid='darkgrey',Biobank='grey')
 annote.colors$individualID <- patient_pal
-
-
 
 ##keep track of organoid
 orgs<-unique(orgtab$specimenID)

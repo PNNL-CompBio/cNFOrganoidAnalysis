@@ -12,7 +12,7 @@ library(dplyr)
 
 ###prelim_fig plot pca
 mat <- rnaseq%>%
-  ungroup()|>
+  dplyr::ungroup()|>
   dplyr::select(specimenID,zScore,Symbol)%>%
   tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
                      values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
@@ -43,7 +43,7 @@ pheatmap(cor(mat,method='spearman'),
 
 ###now we can do just an organoid based clustering
 omat<-rnaseq%>%
-  subset(specimenID%in%intersect(pat2,specs))%>%
+  subset(specimenID%in%intersect(pat2,orgs))%>%
   dplyr::select(specimenID,zScore,Symbol)%>%
   tidyr::pivot_wider(values_from=zScore,names_from=specimenID,
                      values_fn=list(zScore=mean),values_fill=list(zScore=0))%>%
@@ -57,7 +57,7 @@ shared<-intersect(colnames(omat),rownames(obannotes))
 ddf<-plotCorrelationBetweenSamps(omat[,shared],obannotes[shared,],'Fig4A_')
 
 #sync$store(syn$File('geneExpressioncorPlots.pdf',parentId='syn24827084'))
-write.table(ddf,file='fig1a_data.csv',sep=',',row.names=F)
+write.table(ddf,file='fig4a_data.csv',sep=',',row.names=F)
 #sync$store(syn$build_table('counts-based sample correlations','syn11374354','tmp.csv'))
 
 badsamps<-subset(ddf,Similarity<0.6)$altID
@@ -90,7 +90,7 @@ p3<-p2%>%
   facet_grid(Forskolin+Cytokines~.)
   #coord_flip()
 
-ggsave('fig4b_organoidCorrelation.pdf',p3,height=12)
-write.csv(p2,file='fig4b_data.csv',sep=',',row.names=F)
+ggsave('fig4b_organoidCorrelation.pdf',p3,height=12,width=10)
+write.csv(p2,file='fig4b_data.csv',row.names=F)
 
 ##now let's do the deconvolution

@@ -16,4 +16,11 @@ Our helper files do not create figures directly but carry out some basic functio
 ## Figures
 Figures 4 and 5 of the manuscript were generated from the sequencing data, and therefore have scripts to generate them.
 
-### Figure 4
+|---|---|
+|File| Description|
+|---|---|
+|[./fig4ab_plotGeneExpression.R](fig4ab_plotGeneExpression.R)|Plots panels A and B of figure 4|
+|[./fig4cd_tumorDeconv.R](fig4cd_tumorDeconv.R)| THis contains plotting functions|
+|[./fig5_meta_analysis.R](fig5_meta_analysis.R)||
+|---|---|
+
