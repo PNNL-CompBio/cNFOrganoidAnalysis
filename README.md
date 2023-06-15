@@ -1,11 +1,19 @@
 # cNFOrganoidAnalysis
-This repository is designed to analyze data from a panel of [cNF Organoids](https://www.synapse.org/#!Synapse:syn11374354/wiki/488832). We are currently evaluating the data to assess the fidelity off the organoids to the primary patient data.
+This repository is designed to analyze data from a panel of [cNF Organoids](https://www.synapse.org/#!Synapse:syn11374354/wiki/488832). We are currently evaluating the data to assess the fidelity off the organoids to the primary patient data. All of the data is stored on Synapse, which is the back end to the NF Data Portal. This repository serves two purposes: first, to store our work as we analyze and assess which results to present, and second, to enable reproducibility of our figures. 
 
-## RNASeq analysis
-describe processing here
+Here we focus on the files that enable the figure, specifically Figures 4 and 5 of our manuscript, to be recreated. 
 
-## IHC analysis
-Describe here
+## Helper files
+Our helper files do not create figures directly but carry out some basic functions to standardize the data retreival and ploting functions.
+|---|---|
+|File| Description|
+|---|---|
+|[./loadExpFromCounts.R](loadExpFromCounts.R)| This is an R script that loads data from Synaspse|
+|[./orgPlottingFunctions.R](orgPlottingFunctions.R)| THis contains plotting functions|
+|---|---|
 
-## Methylation analysis
-describe
+
+## Figures
+Figures 4 and 5 of the manuscript were generated from the sequencing data, and therefore have scripts to generate them.
+
+### Figure 4

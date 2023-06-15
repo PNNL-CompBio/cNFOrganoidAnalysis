@@ -7,7 +7,7 @@ library(tidyr)
 library(GS)
 library(pheatmap)
 source("orgPlottingFunctions.R")
-#source("rnaSeqProcessing/loadExpFromCounts.R")
+source("loadExpFromCounts.R")
 #source("loadOrganoidData.R")
 library(ggplot2)
 
@@ -78,7 +78,7 @@ mat<-subset(full.tab,method=='mcp_counter')%>%
 
 pheatmap(log10(1+mat),annotation_col=bannotes,cellheight=10,method='ward.D2',
          #clustering_distance_rows = 'correlation',clustering_distance_cols='correlation',
-         cellwidth=10,annotation_colors=annote.colors,filename = 'mcpTypes.pdf',width=18)
+         cellwidth=10,annotation_colors=annote.colors,filename = 'fig4c_mcpTypes.pdf',width=18)
 
 #mcp.cor<-plotCorrelationBetweenSamps(mat,annotes,'mcpCounter')
 
@@ -146,5 +146,5 @@ print(res)
 
 
 pheatmap(res,annotation_col = bannotes,annotation_colors=annote.colors,
-         cellheight=10,cellwidth=10,filename='matrisomeGSVA.pdf')
+         cellheight=10,cellwidth=10,filename='fig4d_matrisomeGSVA.pdf')
 

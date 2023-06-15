@@ -2,16 +2,13 @@
 
 #this file loads the ploting functions
 source("orgPlottingFunctions.R")
-source('rnaSeqProcessing/loadExpFromCounts.R')
+source('loadExpFromCounts.R')
 
 
 library(ggfortify)
 library(umap)
 library(cowplot)
 library(dplyr)
-
-
-
 
 ###prelim_fig plot pca
 mat <- rnaseq%>%
@@ -80,14 +77,14 @@ cnfs<-bannotes%>%
 p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   tidyr::pivot_longer(others,names_to='patient',values_to='Similarity')%>%
   left_join(cnfs)%>%
-  mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
-  mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
-  mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
+  dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
+  dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
+  dplyr::mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
                                                                  'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))
 
 p3<-p2%>%
   rowwise()%>%
-  #mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
+  #dplyr::mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
   ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
   scale_fill_manual(values=media_pal)+
   facet_grid(Forskolin+Cytokines~.)

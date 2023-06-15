@@ -58,13 +58,13 @@ getCountsFromMetadata<-function(manifest,sync,mapping,genes){
   ##now we can sum reads and z score
   sum.tab<-red.tab|>
     group_by(specimenID,individualID,hgnc_symbol)|>
-    mutate(totalCounts=sum(NumReads))|>
+    dplyr::mutate(totalCounts=sum(NumReads))|>
     dplyr::select(-c(Length,EffectiveLength,ensembl_transcript_id_version,TPM,NumReads))|>
-    distinct()
+    dplyr::distinct()
   
   sum.tab<-sum.tab|>
     group_by(specimenID,individualID)|>
-    mutate(zScore=(totalCounts-mean(totalCounts+0.001,na.rm=T))/sd(totalCounts,na.rm=T))|>
+    dplyr::mutate(zScore=(totalCounts-mean(totalCounts+0.001,na.rm=T))/sd(totalCounts,na.rm=T))|>
     dplyr::rename(Symbol='hgnc_symbol')
   
   return(sum.tab)
@@ -77,7 +77,7 @@ pattab<-getCountsFromMetadata(pat_manifest,sync,mapping,genes)|>
   dplyr::select(-specimenID)|>
   dplyr::rename(specimenID='individualID')|>
   dplyr::mutate(individualID=stringr::str_replace(specimenID,'tumor[0-9]*',''))|>
-  mutate(experimentalCondition='None')
+  dplyr::mutate(experimentalCondition='None')
 
 
 ##remove bad species from annnotations and RNA seq
@@ -87,11 +87,11 @@ badSpecs=c("NF0009-1 M","NF0009-1-M+C","NF0002-8-19-M+C+F","NF0002-8-19-D+C",
 ##now fix the annotations!
 rnaseq<-rbind(orgtab, pattab)%>%
   subset(!specimenID%in%badSpecs)|>
-  distinct()%>%
-  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-D$','NF0007-4 D'))%>%
-  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S$','NF0007-4 S'))%>%
-  mutate(specimenID=str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
-  mutate(experimentalCondition=str_replace_all(experimentalCondition,'Cytkines,Mammo','Cytokines,Mammo'))|>
+  dplyr::distinct()%>%
+  dplyr::mutate(specimenID=str_replace_all(specimenID,'NF0007-4-D$','NF0007-4 D'))%>%
+  dplyr::mutate(specimenID=str_replace_all(specimenID,'NF0007-4-S$','NF0007-4 S'))%>%
+  dplyr::mutate(specimenID=str_replace_all(specimenID,'NF0007-4-M$','NF0007-4 M'))%>%
+  dplyr::mutate(experimentalCondition=str_replace_all(experimentalCondition,'Cytkines,Mammo','Cytokines,Mammo'))|>
   ungroup()
 
 rnaseq$Media<-sapply(rnaseq$experimentalCondition,function(x){
@@ -109,7 +109,7 @@ write.table(rnaseq,file='newGeneEx.csv',sep=',',row.names=F,col.names=T)
 ##regular annotations
 pannotes<-rnaseq|>
   dplyr::select(specimenID,individualID,experimentalCondition,Media,Cytokines)|>
-  distinct()%>%
+  dplyr::distinct()%>%
   tibble::remove_rownames()%>%
   tibble::column_to_rownames('specimenID')
 
