@@ -5,22 +5,23 @@ Here we focus on the files that enable the figure, specifically Figures 4 and 5 
 
 ## Helper files
 Our helper files do not create figures directly but carry out some basic functions to standardize the data retreival and ploting functions.
-|---|---|
+
 |File| Description|
 |---|---|
 |[./loadExpFromCounts.R](loadExpFromCounts.R)| This is an R script that loads data from Synaspse|
 |[./orgPlottingFunctions.R](orgPlottingFunctions.R)| THis contains plotting functions|
-|---|---|
 
 
 ## Figures
 Figures 4 and 5 of the manuscript were generated from the sequencing data, and therefore have scripts to generate them.
 
-|---|---|
 |File| Description|
 |---|---|
 |[./fig4ab_plotGeneExpression.R](fig4ab_plotGeneExpression.R)|Plots panels A and B of figure 4|
 |[./fig4cd_tumorDeconv.R](fig4cd_tumorDeconv.R)| Tjis contains plotting functions|
 |[./fig5_meta_analysis.R](fig5_meta_analysis.R)| This is the analysis comparing correlations across data modalities.|
-|---|---|
+
+## Samples
+We combine samples from the CTF Biobank as well as our own, depicted below.
+[!samples](./pcaOfAllSamples.png)
 
