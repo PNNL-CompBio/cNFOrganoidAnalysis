@@ -79,8 +79,8 @@ p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   left_join(cnfs)%>%
   dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
   dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
-  dplyr::mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
-                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))
+  dplyr::mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
+                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13')))
 p2$Extras=rep("None",nrow(p2))
 p2$Extras[which(p2$Media=='Tumor')]<-'Tumor'
 p2$Extras[intersect(which(p2$Cytokines=='TRUE'),which(p2$Forskolin=='TRUE'))]<-'F+C'
