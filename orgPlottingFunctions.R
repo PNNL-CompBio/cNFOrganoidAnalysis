@@ -23,8 +23,10 @@ pal = c(wesanderson::wes_palette("Chevalier1"),
 media_pal = wesanderson::wes_palette('Darjeeling1')[1:4]
 names(media_pal)<-c('Mammo','DMEM','StemPro','Tumor')
 
-org_pal = c("#212155","#2B3A8D","#3375B7","#6EC6EA","#CDE8F4")
-names(org_pal)<-c("NF0009","NF0012","NF0002","NF0007","NF0008")
+org_pal = c("#212155","#2B3A8D","#3375B7","#6EC6EA","#CDE8F4","#6EC6EA","#9EC6EA")
+names(org_pal)<-c("NF0009","NF0012","NF0002","NF0007","NF0008","NF0007-4","NF0007-2")
+
+
 
 ctf_pal <- c("#27194D","#453286","#5D509D","#7165A9","#938ABE","#BFB7D9","#D1B4D3",
              "#BF8CBA","#AE5E9F","#873180","#572455")

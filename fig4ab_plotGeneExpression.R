@@ -31,7 +31,7 @@ bannotes<-bannotes[pat2,]
 mat<-mat[,pat2]
 
 
-pheatmap(cor(mat,method='spearman'),
+pheatmap(cor(mat,method='pearson'),
          annotation_col = bannotes,#%>%
          annotation_row= bannotes,#%>%
          clustering_distance_rows = 'correlation',
@@ -79,18 +79,32 @@ p2<-restab%>%as.data.frame()%>%tibble::rownames_to_column('cNF Sample')%>%
   left_join(cnfs)%>%
   dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(patient,'tumor[0-9]*',''))%>%
   dplyr::mutate(`Biobank Patient`=stringr::str_replace_all(`Biobank Patient`,'patient','Patient '))%>%
-  dplyr::mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=rev(c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
-                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13'))))
+  dplyr::mutate(`Biobank Patient`=factor(`Biobank Patient`,levels=c('Patient 1','Patient 2','Patient 3','Patient 4','Patient 5','Patient 6',
+                                                                 'Patient 8','Patient 9','Patient 10','Patient 11','Patient 13')))
+p2$Extras=rep("None",nrow(p2))
+p2$Extras[which(p2$Media=='Tumor')]<-'Tumor'
+p2$Extras[intersect(which(p2$Cytokines=='TRUE'),which(p2$Forskolin=='TRUE'))]<-'F+C'
+p2$Extras[intersect(which(p2$Cytokines=='TRUE'),which(p2$Forskolin=='FALSE'))]<-'C only'
+p2$Extras[intersect(which(p2$Cytokines=='FALSE'),which(p2$Forskolin=='TRUE'))]<-'F only'
 
 p3<-p2%>%
-  rowwise()%>%
-  #dplyr::mutate(extras=ifelse(Media=="Tumor"&&extras=="None","Tumor",extras))%>%
   ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
   scale_fill_manual(values=media_pal)+
-  facet_grid(Forskolin+Cytokines~.)
-  #coord_flip()
+  facet_grid(Extras~.)+
+  theme_classic()
+
+
+
+p4<-p2%>%
+  ggplot(aes(x=`Biobank Patient`,y=Similarity,fill=Media))+geom_boxplot(outlier.shape=NA)+
+  scale_fill_manual(values=media_pal)+
+  facet_grid(Extras~.)+
+  scale_y_continuous(limits=c(0.5,1))+
+  theme_classic()
 
 ggsave('fig4b_organoidCorrelation.pdf',p3,height=12,width=10)
+ggsave('fig4b_organoidCorrelation_largerY.pdf',p4,height=12,width=10)
+
 write.csv(p2,file='fig4b_data.csv',row.names=F)
 
 ##now let's do the deconvolution

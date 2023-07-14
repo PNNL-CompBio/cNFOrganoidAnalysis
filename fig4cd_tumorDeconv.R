@@ -9,6 +9,13 @@ source("orgPlottingFunctions.R")
 source("loadExpFromCounts.R")
 #source("loadOrganoidData.R")
 library(ggplot2)
+library(GSVA)
+
+
+##load up one more annotation file
+bannotes[which(bannotes$individualID=='NF0007'),'individualID']<-
+  sapply(rownames(bannotes[which(bannotes$individualID=='NF0007'),]),function(x)
+    unlist(stringr::str_split(x,pattern='[ |-][M|D|S]'))[1])
 
 #' runImmuneDeconv
 #' @param tab
